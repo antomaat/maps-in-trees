@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"html/template"
+	"net/http"
 	"os"
 )
 
@@ -9,7 +11,7 @@ func main() {
 
     arguments := os.Args[1:]
     if (len(arguments) == 0) {
-        fmt.Println("missing directory path \n")
+        fmt.Println("missing directory path")
         os.Exit(1) 
     }
 
@@ -25,5 +27,15 @@ func main() {
     for i := 0; i < len(items); i++ {
         fmt.Println(items[i].Name())
     }
+
+    handleDrawing()
 }
 
+
+func handleDrawing() {
+    tmpl := template.Must(template.ParseFiles("layout.html"))
+    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        tmpl.Execute(w, "data goes here")
+    })
+    http.ListenAndServe(":80", nil)
+}
