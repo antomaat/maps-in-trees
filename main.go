@@ -28,14 +28,5 @@ func main() {
         fmt.Println(items[i].Name())
     }
 
-    handleDrawing()
 }
 
-
-func handleDrawing() {
-    tmpl := template.Must(template.ParseFiles("layout.html"))
-    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        tmpl.Execute(w, "data goes here")
-    })
-    http.ListenAndServe(":80", nil)
-}
