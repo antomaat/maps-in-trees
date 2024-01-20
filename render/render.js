@@ -2,9 +2,14 @@
 let treemap;
 let canvas;
 let shouldRedraw = true;
-let size_x = 20;
-let size_y = 100;
 let items = [];
+
+let canvasRect;
+
+let mouse_pos;
+
+
+const path = document.getElementById("path");
 
 const context = createCanvas();
 
@@ -12,6 +17,9 @@ loadJson().then(tree => {tree;});
 
 function createCanvas() {
     canvas = document.getElementById("myCanvas");
+    canvas.addEventListener("mousemove", onMouseMove) 
+    canvasRect = canvas.getBoundingClientRect();
+
     const ctx = canvas.getContext("2d");
 
     ctx.fillStyle = "#FF0000";
@@ -20,12 +28,31 @@ function createCanvas() {
     return ctx;
 }
 
+function onMouseMove(event) {
+    mouse_pos = {
+        x: event.offsetX,
+        y: event.offsetY
+    };
+    getItemAndDisplay();
+}
+
 function run() {
     while(shouldRedraw) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#FF0000";
         ctx.fillRect(0, 0, 1000, 500);
-        drawTreemap(ctx, tree);
+        getItemAndDisplay();
+        drawTreemap(ctx);
+    }
+}
+
+function getItemAndDisplay() {
+    console.log(mouse_pos.x)
+    for (node of items) {
+        if (mouse_pos.x > node.positionX && mouse_pos.x < node.positionX + node.sizeX) {
+            console.log("print out node");
+            path.innerHTML = node.name;
+        }
     }
 }
 
@@ -45,17 +72,11 @@ function initItems(tree) {
     console.log(items);
 }
 
-function drawTreemap(context, tree) {
-    console.log(tree.name);
-    /*for (node of tree.children) {
-        context.fillStyle = "#000000";
-        context.fillRect(0, 0, size_x, size_y);
-    }*/
+function drawTreemap(context) {
     for (node of items) {
         drawBorder(context, node.positionX, node.positionY, node.sizeX, node.sizeY);
         context.fillStyle = "#000000";
         context.fillRect(node.positionX, node.positionY, node.sizeX, node.sizeY);
-
     }
 }
 
@@ -71,6 +92,6 @@ async function loadJson() {
     const treeJson = await response.json();
     treemap = treeJson;
     initItems(treemap);
-    drawTreemap(context, treemap);
+    drawTreemap(context);
 }
 
