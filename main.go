@@ -1,11 +1,20 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"html/template"
-	"net/http"
+	"io/ioutil"
 	"os"
 )
+
+type Node  struct {
+    Name string
+    PositionX int
+    PositionY int
+    SizeX int
+    SizeY int
+    Children []Node
+}
 
 func main() {
 
@@ -24,9 +33,37 @@ func main() {
         fmt.Printf("directory %s empty or missing \n", dir)
         os.Exit(1)
     }
+
+    createTreemap(items);
+}
+
+func createTreemap(items []os.DirEntry) {
+    node := Node {
+        Name: "root",
+        PositionX: 0,
+        PositionY: 0,
+        SizeX: 25,
+        SizeY: 25,
+    }
+    
+    x := 0
+    y := 0
+
     for i := 0; i < len(items); i++ {
-        fmt.Println(items[i].Name())
+        child := Node { 
+            Name: items[i].Name(),
+            PositionX: x + 25 * i,
+            PositionY: y,
+            SizeX: 25,
+            SizeY: 25,
+        }
+        node.Children = append(node.Children, child)
+        node.SizeX += child.SizeX
     }
 
+    result, _ := json.Marshal(node)
+    fmt.Println(string(result))
+
+    _ = ioutil.WriteFile("./render/input.json", result, 0644)
 }
 
