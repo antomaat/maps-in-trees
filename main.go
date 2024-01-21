@@ -14,6 +14,7 @@ type Node  struct {
     SizeX int
     SizeY int
     Children []Node
+    IsDir bool
 }
 
 func main() {
@@ -25,45 +26,48 @@ func main() {
     }
 
     dir := arguments[0]
-
-    fmt.Println("Hello World")
-    items, _ := os.ReadDir(dir)
-
-    if (len(items) == 0) {
-        fmt.Printf("directory %s empty or missing \n", dir)
-        os.Exit(1)
-    }
-
-    createTreemap(items);
+    createTreemap(dir);
 }
 
-func createTreemap(items []os.DirEntry) {
-    node := Node {
-        Name: "root",
-        PositionX: 0,
-        PositionY: 0,
-        SizeX: 25,
-        SizeY: 25,
-    }
-    
-    x := 0
-    y := 0
-
-    for i := 0; i < len(items); i++ {
-        child := Node { 
-            Name: items[i].Name(),
-            PositionX: x + 25 * i,
-            PositionY: y,
-            SizeX: 25,
-            SizeY: 25,
-        }
-        node.Children = append(node.Children, child)
-        node.SizeX += child.SizeX
-    }
-
+func createTreemap(dir string) {
+    node := createTree(dir, 0, 0)
     result, _ := json.Marshal(node)
     fmt.Println(string(result))
 
     _ = ioutil.WriteFile("./render/input.json", result, 0644)
+}
+
+func createTree(dirName string, startX int, startY int) Node {
+    node := Node {
+        Name: dirName,
+        PositionX: startX,
+        PositionY: startY,
+        SizeX: 25,
+        SizeY: 25,
+        IsDir: true,
+    }
+
+    items, _ := os.ReadDir(dirName)
+
+    for i := 0; i < len(items); i++ {
+        child := Node {}
+        if items[i].IsDir() {
+            child = createTree(items[i].Name(), startX, startY)
+        } else {
+            child = Node { 
+                Name: items[i].Name(),
+                PositionX: startX + 25 * i,
+                PositionY: startY,
+                SizeX: 25,
+                SizeY: 25,
+                IsDir: false,
+            }
+        }
+
+        node.Children = append(node.Children, child)
+        node.SizeX += child.SizeX
+    }
+
+    return node
 }
 
