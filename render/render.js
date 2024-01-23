@@ -23,7 +23,7 @@ function createCanvas() {
     const ctx = canvas.getContext("2d");
 
     ctx.fillStyle = "#FF0000";
-    ctx.fillRect(0, 0, 1000, 500);
+    ctx.fillRect(0, 0, 2000, 500);
 
     return ctx;
 }
@@ -40,7 +40,7 @@ function run() {
     while(shouldRedraw) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#FF0000";
-        ctx.fillRect(0, 0, 1000, 500);
+        ctx.fillRect(0, 0, 2000, 500);
         getItemAndDisplay();
         drawTreemap(ctx);
     }
@@ -65,11 +65,34 @@ function initItems(tree) {
                 positionY: node.PositionY,
                 sizeX: node.SizeX,
                 sizeY: node.SizeY,
-                children: node.Children
+                children: node.Children,
+                isDir: node.IsDir
             }
         );
     }
-    console.log(items);
+}
+
+function initTree(tree) {
+    console.log("tree: ", tree);
+    if (tree.Children === null) {
+        return
+    }
+    for (node of tree.Children) {
+        items.push(
+            {
+                name: node.Name,
+                positionX: node.PositionX,
+                positionY: node.PositionY,
+                sizeX: node.SizeX,
+                sizeY: node.SizeY,
+                children: node.Children,
+                isDir: node.IsDir
+            }
+        );
+        if (node.IsDir) {
+            initTree(node)
+        }
+    }
 }
 
 function drawTreemap(context) {
@@ -91,7 +114,8 @@ async function loadJson() {
     const response = await fetch('./input.json');
     const treeJson = await response.json();
     treemap = treeJson;
-    initItems(treemap);
+    //initItems(treemap);
+    initTree(treemap)
     drawTreemap(context);
 }
 
