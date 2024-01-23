@@ -39,8 +39,10 @@ func main() {
 
 func createTreemap(dir string, areaX float64, areaY float64) {
     node := createTree(dir, dir)
+    node.SizeX = areaX
+    node.SizeY = areaY
     //fmt.Println(node)
-    node = updateDisplay(node, 0, 0, areaX, areaY, 1)
+    node = updateDisplay(node, 0)
     result, _ := json.Marshal(node)
     fmt.Println(string(result))
 
@@ -80,56 +82,88 @@ func createTree(dirName string, pathName string) Node {
 
         node.Children = append(node.Children, child)
         //node.SizeX += child.SizeX
-        node.Size += 1;
+        node.Size += child.Size;
     }
 
     sort.SliceStable(node.Children, func(i, j int) bool {
-        return node.Children[i].Size < node.Children[i].Size
+        return node.Children[i].Size > node.Children[j].Size
     })
+    fmt.Println("sorted array")
+    fmt.Println(node.Children)
    
     return node
 }
 
-func updateDisplay(node Node, positionX float64, positionY float64, areaX float64, areaY float64, level int) Node {
+func updateDisplay(node Node, level int) Node {
     directories := []int{}
     corner := Vector2 {
-        x: positionX, 
-        y: positionY,
+        x: node.PositionX, 
+        y: node.PositionY,
     }
+    scale := Vector2 {
+        x: node.SizeX,
+        y: node.SizeY,
+    }
+
+    fmt.Println("-------------------")
+    fmt.Print("parent size: ")
+    fmt.Println(node.Size)
+    fmt.Print("parent scale: ")
+    fmt.Println(scale)
+
 
     for i := 0; i < len(node.Children); i++ {
 
-        fraction :=  node.Children[i].Size / node.Size 
-        area := areaX * float64(fraction) 
-        fmt.Println(area)
+        child := node.Children[i]
 
-        //node.Children[i].SizeX = area / node.SizeX
-        node.Children[i].SizeY = areaY
+        if level % 2 == 0 {
+            fraction :=  float64(child.Size) / float64(node.Size)
+            area := scale.x * float64(fraction) 
 
-        node.Children[i].PositionX = corner.x
-        //node.Children[i].PositionY = corner.y
-        corner.x += node.Children[i].SizeX
-        //corner.y += node.Children[i].SizeY
+            child.SizeX = area
+            child.SizeY = scale.y 
 
-        if node.Children[i].IsDir {
+            child.PositionX = corner.x
+            corner.x += child.SizeX
+            fmt.Println(" new child ------")
+            fmt.Print(" size: ")
+            fmt.Println(child.Size)
+            fmt.Print(" fraction: ")
+            fmt.Println(fraction)
+            fmt.Print(" area: ")
+            fmt.Println(area)
+        } else {
+            fmt.Println("level is odd")
+            fraction :=  float64(child.Size) / float64(node.Size)
+            area := scale.y * float64(fraction) 
+
+            child.SizeX = scale.x 
+            child.SizeY = area 
+
+            child.PositionY = corner.y
+            corner.y += child.SizeY
+        }
+
+        node.Children[i] = child
+
+        if child.IsDir {
             directories = append(directories, i)
         }
     }
 
     for j := 0; j < len(directories); j++ {
         index := directories[j]
-        fmt.Println("=====================")
+        /*fmt.Println("=====================")
         fmt.Println(node.Children[index])
         fmt.Println(node.Children[index].Name)
         fmt.Printf("posx %f \n", node.Children[index].PositionX)
         fmt.Printf("posy %f \n", node.Children[index].PositionY)
         fmt.Printf("scalex %f \n", node.Children[index].SizeX)
         fmt.Printf("scaley %f \n", node.Children[index].SizeY)
-        node.Children[index] = updateDisplay(node.Children[index], node.Children[index].PositionX, node.Children[index].PositionY, node.Children[index].SizeX, node.Children[index].SizeY, level + 1)
-        fmt.Println(node.Children[index])
+        */
+        node.Children[index] = updateDisplay(node.Children[index], level + 1)
+        //fmt.Println(node.Children[index])
     }
-
-
 
     return node
 }

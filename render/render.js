@@ -50,8 +50,9 @@ function getItemAndDisplay() {
     console.log(mouse_pos.x)
     for (node of items) {
         if (mouse_pos.x > node.positionX && mouse_pos.x < node.positionX + node.sizeX) {
-            console.log("print out node");
-            path.innerHTML = node.name;
+            if (mouse_pos.y > node.positionY && mouse_pos.y < node.positionY + node.sizeY) {
+                path.innerHTML = node.name;
+            }
         }
     }
 }
