@@ -14,7 +14,7 @@ type Node  struct {
     PositionY float64 
     SizeX float64 
     SizeY float64 
-    Size int
+    Size int64
     Children []Node
     IsDir bool
     Path string
@@ -34,7 +34,7 @@ func main() {
     }
 
     dir := arguments[0]
-    createTreemap(dir, 1000, 500);
+    createTreemap(dir, 2000, 500);
 }
 
 func createTreemap(dir string, areaX float64, areaY float64) {
@@ -65,6 +65,7 @@ func createTree(dirName string, pathName string) Node {
 
     for i := 0; i < len(items); i++ {
         child := Node {}
+        info, _ := items[i].Info()
         if items[i].IsDir() {
             child = createTree(items[i].Name(), dirName + "/" + items[i].Name())
         } else {
@@ -74,7 +75,7 @@ func createTree(dirName string, pathName string) Node {
                 PositionY: 0,
                 SizeX: 1,
                 SizeY: 1,
-                Size: 1,
+                Size: info.Size(), 
                 IsDir: false,
                 Path: pathName,
             }
