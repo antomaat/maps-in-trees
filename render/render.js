@@ -47,11 +47,10 @@ function run() {
 }
 
 function getItemAndDisplay() {
-    console.log(mouse_pos.x)
     for (node of items) {
         if (mouse_pos.x > node.positionX && mouse_pos.x < node.positionX + node.sizeX) {
             if (mouse_pos.y > node.positionY && mouse_pos.y < node.positionY + node.sizeY) {
-                path.innerHTML = node.name;
+                path.innerHTML = node.path + "/" + node.name;
             }
         }
     }
@@ -67,7 +66,8 @@ function initItems(tree) {
                 sizeX: node.SizeX,
                 sizeY: node.SizeY,
                 children: node.Children,
-                isDir: node.IsDir
+                isDir: node.IsDir,
+                path: node.Path
             }
         );
     }
@@ -87,7 +87,8 @@ function initTree(tree) {
                 sizeX: node.SizeX,
                 sizeY: node.SizeY,
                 children: node.Children,
-                isDir: node.IsDir
+                isDir: node.IsDir,
+                path: node.Path
             }
         );
         if (node.IsDir) {

@@ -34,10 +34,14 @@ func main() {
     }
 
     dir := arguments[0]
-    createTreemap(dir, 2000, 500);
+    output := "./input.json"
+    if len(arguments) > 1 {
+        output = arguments[1]
+    }
+    createTreemap(dir, output, 2000, 500);
 }
 
-func createTreemap(dir string, areaX float64, areaY float64) {
+func createTreemap(dir string, output string, areaX float64, areaY float64) {
     node := createTree(dir, dir)
     node.SizeX = areaX
     node.SizeY = areaY
@@ -46,7 +50,7 @@ func createTreemap(dir string, areaX float64, areaY float64) {
     result, _ := json.Marshal(node)
     fmt.Println(string(result))
 
-    _ = ioutil.WriteFile("./render/input.json", result, 0644)
+    _ = ioutil.WriteFile(output, result, 0644)
 }
 
 func createTree(dirName string, pathName string) Node {
@@ -61,12 +65,14 @@ func createTree(dirName string, pathName string) Node {
         Path: pathName,
     }
 
-    items, _ := os.ReadDir(dirName)
+    items, _ := os.ReadDir(pathName)
 
     for i := 0; i < len(items); i++ {
         child := Node {}
         info, _ := items[i].Info()
         if items[i].IsDir() {
+            fmt.Print(items[i].Name())
+            fmt.Println(": is dir")
             child = createTree(items[i].Name(), dirName + "/" + items[i].Name())
         } else {
             child = Node { 
@@ -93,6 +99,10 @@ func createTree(dirName string, pathName string) Node {
     fmt.Println(node.Children)
    
     return node
+}
+
+func squarifyDisplay(node Node) {
+
 }
 
 func updateDisplay(node Node, level int) Node {
