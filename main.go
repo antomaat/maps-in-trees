@@ -25,6 +25,13 @@ type Vector2 struct {
     y float64 
 }
 
+type Rectangle struct {
+    x float64
+    y float64
+    width float64
+    height float64
+}
+
 func main() {
 
     arguments := os.Args[1:]
@@ -46,9 +53,10 @@ func createTreemap(dir string, output string, areaX float64, areaY float64) {
     node.SizeX = areaX
     node.SizeY = areaY
     //fmt.Println(node)
-    node = updateDisplay(node, 0)
+    //node = updateDisplay(node, 0)
+    SquarifyDisplay(node)
     result, _ := json.Marshal(node)
-    fmt.Println(string(result))
+    //fmt.Println(string(result))
 
     _ = ioutil.WriteFile(output, result, 0644)
 }
@@ -101,9 +109,29 @@ func createTree(dirName string, pathName string) Node {
     return node
 }
 
-func squarifyDisplay(node Node) {
+func SquarifyDisplay(node Node) Rectangle {
+    fillArea := Rectangle {
+        x: node.PositionX,
+        y: node.PositionY,
+        width: node.SizeX,
+        height: node.SizeY,
+    }
 
+    fullSize := node.Size
+
+    vertical := fillArea.height <= fillArea.width 
+    if vertical {
+        child := node.Children[0]
+        rect := Rectangle{x: fillArea.x, y: fillArea.y} 
+
+        fraction := child.Size / fullSize
+        rect.width = fillArea.width * float64(fraction)
+        rect.height = fillArea.height
+        return rect
+    }
+    return Rectangle {} 
 }
+
 
 func updateDisplay(node Node, level int) Node {
     directories := []int{}
