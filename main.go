@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"sort"
 )
@@ -30,6 +31,7 @@ type Rectangle struct {
     y float64
     width float64
     height float64
+    index int
 }
 
 func main() {
@@ -54,9 +56,9 @@ func createTreemap(dir string, output string, areaX float64, areaY float64) {
     node.SizeY = areaY
     //fmt.Println(node)
     //node = updateDisplay(node, 0)
-    SquarifyDisplay(node)
+    node = NewSquarifyDisplay(node)
     result, _ := json.Marshal(node)
-    //fmt.Println(string(result))
+    fmt.Println(string(result))
 
     _ = ioutil.WriteFile(output, result, 0644)
 }
@@ -109,6 +111,168 @@ func createTree(dirName string, pathName string) Node {
     return node
 }
 
+
+func NewSquarifyDisplay(node Node) Node {
+    fillArea := Rectangle {
+        x: node.PositionX,
+        y: node.PositionY,
+        width: node.SizeX,
+        height: node.SizeY,
+    }
+    //fullSize := node.Size
+    //vertical := fillArea.height <= fillArea.width 
+    //children := node.Children
+    directories := []int{}
+    cache := [][]Node{}
+    row := []Node{}
+    for _, n := range node.Children {
+
+        vertical := fillArea.height <= fillArea.width 
+        widthN := fillArea.width
+        if vertical {
+            widthN = fillArea.height
+        }
+        rowWithChild := append(row, n)
+
+        if len(row) == 0 || worst(row, widthN) >= worst(rowWithChild, widthN) {
+            row = append(row, n)
+        } else {
+            row = layoutRow(row, widthN, vertical, &fillArea)
+            cache = append(cache, row)
+            // TODO: remove the added area from the fullArea
+            row = []Node{}
+            row = append(row, n)
+        }
+    }
+
+    // maybe a single node is left unprocessed
+    if len(row) > 0 {
+        row = layoutRow(row, fillArea.height, true, &fillArea)
+        cache = append(cache, row)
+        row = []Node{}
+    }
+
+    fmt.Println(cache)
+
+    // update references
+    index := 0
+    for _, nList := range cache {
+        for _, n := range nList {
+            if n.Name != node.Children[index].Name {
+                panic("holy hell, a element is calculated wrongly")
+            } 
+            node.Children[index].PositionX = n.PositionX
+            node.Children[index].PositionY = n.PositionY
+            node.Children[index].SizeX = n.SizeX
+            node.Children[index].SizeY = n.SizeY
+
+            if n.IsDir {
+                directories = append(directories, index)
+            }
+            index++
+        }
+    }
+
+    for j := 0; j < len(directories); j++ {
+        indx := directories[j]
+        node.Children[indx] = NewSquarifyDisplay(node.Children[indx])
+    }
+    return node
+}
+
+func layoutRow(row []Node, width float64, vertical bool, parent *Rectangle) []Node {
+    rowHeight := sumSizes(row) / width
+    result := []Node{}
+    cacheParent := Rectangle {
+        x: parent.x,
+        y: parent.y,
+        width: parent.width,
+        height: parent.height,
+    }
+    for _, node := range row {
+        rowWidth := float64(node.Size) / rowHeight
+        x := cacheParent.x
+        y := cacheParent.y
+
+        fmt.Println("=================")
+        fmt.Println("node at beginning")
+        printNode(node)
+
+        if (vertical) {
+            node.PositionX = x
+            node.PositionY = y
+            node.SizeY = float64(rowWidth)
+            node.SizeX = rowHeight
+            cacheParent.y += float64(rowWidth)
+        } else {
+            node.PositionX = x
+            node.PositionY = y
+            node.SizeX = float64(rowWidth)
+            node.SizeY = rowHeight
+            cacheParent.x += float64(rowWidth)
+        }
+
+        fmt.Println("---------------")
+        fmt.Println("node at the end")
+        printNode(node)
+
+        if vertical {
+            parent.x += rowHeight
+            parent.width -= rowHeight
+            parent.height -= rowWidth
+        } else {
+            parent.y += rowHeight
+            parent.width -= rowWidth
+            parent.height -= rowHeight
+        }
+
+        result = append(result, node)
+    }
+    return result 
+}
+
+func printNode(node Node) {
+    fmt.Print("node: ")
+    fmt.Println(node.Name)
+    fmt.Print("x: ")
+    fmt.Println(node.PositionX)
+    fmt.Print("y: ")
+    fmt.Println(node.PositionY)
+    fmt.Print("width: ")
+    fmt.Println(node.SizeX)
+    fmt.Print("height: ")
+    fmt.Println(node.SizeY)
+}
+
+func worst(sizes []Node, w float64) float64 {
+	max := math.Inf(-1)
+	min := math.Inf(1)
+	sum := 0.0
+	for _, size := range sizes {
+		sum += float64(size.Size)
+		max = math.Max(max, float64(size.Size))
+		min = math.Min(min, float64(size.Size))
+	}
+	return math.Max((w*w*max)/(sum*sum), (sum*sum)/(w*w*min))
+}
+
+/*func layoutCol(nodes []Node, rect Rectangle) {
+    covered := sumSizes(nodes)
+    height := covered / rect.width
+    calcNodes:= []
+    for i, node := range nodes {
+        calcNodes = append(calcNodes, node)
+    }
+}*/
+
+func sumSizes(nodes []Node) float64 {
+    sum := 0.0
+    for _, n := range nodes {
+        sum += float64(n.Size)
+    }
+    return sum
+}
+
 func SquarifyDisplay(node Node) Rectangle {
     fillArea := Rectangle {
         x: node.PositionX,
@@ -119,7 +283,38 @@ func SquarifyDisplay(node Node) Rectangle {
 
     fullSize := node.Size
 
+ //   results := [][]Rectangle{}
+    //active := []Rectangle{}
+
     vertical := fillArea.height <= fillArea.width 
+    cachedSize := 0
+    for i := 0; i < len(node.Children); i++ {
+
+        if vertical {
+            child := node.Children[0]
+            //rect := Rectangle{x: fillArea.x, y: fillArea.y} 
+            cachedSize += int(child.Size)
+            fmt.Print("cached size: ")
+            fmt.Println(cachedSize)
+            fraction := float64(cachedSize) / float64(fullSize)
+            tmpWidth := fillArea.width * float64(fraction)
+            tmpHeight := float64(cachedSize) / float64(tmpWidth)
+            rect := Rectangle{width: tmpWidth, height: tmpHeight}
+            
+            // get the worst ratio there is from the list of rects
+            worst := max(rect.width / rect.height, rect.height / rect.width)
+            /*for _, r := range active {
+                cached := max(r.width / r.height, r.height / r.width)
+            }*/
+            fmt.Print("w: ")
+            fmt.Println(tmpWidth)
+            fmt.Print("h: ")
+            fmt.Println(tmpHeight)
+            fmt.Print("worst ")
+            fmt.Println(worst)
+        } 
+    }
+
     if vertical {
         child := node.Children[0]
         rect := Rectangle{x: fillArea.x, y: fillArea.y} 

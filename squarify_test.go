@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestSquarify(t *testing.T) {
     node := createNodes()
@@ -13,6 +16,13 @@ func TestSquarify(t *testing.T) {
     }
 }
 
+func TestSquarifyNew(t *testing.T) {
+    fmt.Println("-------------------")
+    fmt.Println("test squarified new")
+    node := createNodes()
+    result := NewSquarifyDisplay(node)
+    fmt.Println(result.Children)
+}
 
 func createNodes() Node {
     node := Node {
@@ -27,6 +37,7 @@ func createNodes() Node {
     }
     node.Children = append(node.Children, createNode(6, "first"))
     node.Children = append(node.Children, createNode(6, "second"))
+    node.Children = append(node.Children, createNode(4, "third"))
     return node
 }
 
