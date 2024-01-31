@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"testing"
 )
 
@@ -16,12 +18,14 @@ func TestSquarify(t *testing.T) {
     }
 }
 
+
 func TestSquarifyNew(t *testing.T) {
     fmt.Println("-------------------")
     fmt.Println("test squarified new")
     node := createNodes()
     result := NewSquarifyDisplay(node)
     fmt.Println(result.Children)
+    saveResultToJson("./render/input.json", node)
 }
 
 func createNodes() Node {
@@ -29,8 +33,8 @@ func createNodes() Node {
         Name: "root",
         PositionX: 0,
         PositionY: 0,
-        SizeX: 6,
-        SizeY: 4,
+        SizeX: 1000,
+        SizeY: 500,
         Size: 24,
         IsDir: true,
         Path: "path",
@@ -38,9 +42,16 @@ func createNodes() Node {
     node.Children = append(node.Children, createNode(6, "first"))
     node.Children = append(node.Children, createNode(6, "second"))
     node.Children = append(node.Children, createNode(4, "third"))
+    node.Children = append(node.Children, createNode(4, "fourth"))
     return node
 }
 
+func saveResultToJson(output string, node Node) {
+    result, _ := json.Marshal(node)
+    fmt.Println(string(result))
+
+    _ = ioutil.WriteFile(output, result, 0644)
+}
 func createNode(size int64, name string) Node {
     node := Node {
         Name: name,

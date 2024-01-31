@@ -32,6 +32,7 @@ type Rectangle struct {
     width float64
     height float64
     index int
+    size float64
 }
 
 func main() {
@@ -118,6 +119,7 @@ func NewSquarifyDisplay(node Node) Node {
         y: node.PositionY,
         width: node.SizeX,
         height: node.SizeY,
+        size: float64(node.Size),
     }
     //fullSize := node.Size
     //vertical := fillArea.height <= fillArea.width 
@@ -129,12 +131,17 @@ func NewSquarifyDisplay(node Node) Node {
 
         vertical := fillArea.height <= fillArea.width 
         widthN := fillArea.width
+        heightN := fillArea.height
         if vertical {
             widthN = fillArea.height
+            heightN = fillArea.width
         }
+        
+        fmt.Printf("is vertical: %t, smallest side: %g \n", vertical, widthN)
+
         rowWithChild := append(row, n)
 
-        if len(row) == 0 || worst(row, widthN) >= worst(rowWithChild, widthN) {
+        if len(row) == 0 || worst(row, widthN, heightN) >= worst(rowWithChild, widthN, heightN) {
             row = append(row, n)
         } else {
             row = layoutRow(row, widthN, vertical, &fillArea)
@@ -180,53 +187,65 @@ func NewSquarifyDisplay(node Node) Node {
     return node
 }
 
-func layoutRow(row []Node, width float64, vertical bool, parent *Rectangle) []Node {
-    rowHeight := sumSizes(row) / width
+func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangle) []Node {
     result := []Node{}
     cacheParent := Rectangle {
         x: parent.x,
         y: parent.y,
         width: parent.width,
         height: parent.height,
+        size: parent.size,
     }
-    for _, node := range row {
-        rowWidth := float64(node.Size) / rowHeight
-        x := cacheParent.x
-        y := cacheParent.y
 
-        fmt.Println("=================")
-        fmt.Println("node at beginning")
-        printNode(node)
+
+    sizes := sumSizes(row)
+    fraction :=  float64(sizes) / float64(cacheParent.size)
+
+    longestSide := parent.width
+    if !vertical {
+        longestSide = parent.height
+    }
+
+    area := longestSide * float64(fraction) 
+    fmt.Print("row area: ")
+    fmt.Println(area)
+
+    for _, node := range row {
+        // step 1 - calculate the size of the node
+        nodeOtherSide := float64(node.Size) / sizes
 
         if (vertical) {
-            node.PositionX = x
-            node.PositionY = y
-            node.SizeY = float64(rowWidth)
-            node.SizeX = rowHeight
-            cacheParent.y += float64(rowWidth)
-        } else {
-            node.PositionX = x
-            node.PositionY = y
-            node.SizeX = float64(rowWidth)
-            node.SizeY = rowHeight
-            cacheParent.x += float64(rowWidth)
-        }
+            node.SizeY = smallestSide * nodeOtherSide
+            node.SizeX = area 
+            node.PositionY = cacheParent.y
+            node.PositionX = cacheParent.x
 
-        fmt.Println("---------------")
-        fmt.Println("node at the end")
-        printNode(node)
+            cacheParent.y += node.SizeY
 
-        if vertical {
-            parent.x += rowHeight
-            parent.width -= rowHeight
-            parent.height -= rowWidth
+            //printNode(node)
         } else {
-            parent.y += rowHeight
-            parent.width -= rowWidth
-            parent.height -= rowHeight
+            node.SizeX = smallestSide * nodeOtherSide
+            node.SizeY = area 
+            node.PositionX = cacheParent.x
+            node.PositionY = cacheParent.y
+
+            cacheParent.x += node.SizeX
+
+            //printNode(node)
         }
 
         result = append(result, node)
+        // step 2 - remove the size of the node from cacheParent
+        // step 3 - remove the locations from the real parent
+    }
+
+    if vertical {
+        fmt.Println("vertical is real")
+        parent.x += area
+        parent.width -= area
+    } else {
+        parent.y += area
+        parent.height -= area
     }
     return result 
 }
@@ -244,26 +263,35 @@ func printNode(node Node) {
     fmt.Println(node.SizeY)
 }
 
-func worst(sizes []Node, w float64) float64 {
-	max := math.Inf(-1)
-	min := math.Inf(1)
-	sum := 0.0
-	for _, size := range sizes {
-		sum += float64(size.Size)
-		max = math.Max(max, float64(size.Size))
-		min = math.Min(min, float64(size.Size))
-	}
-	return math.Max((w*w*max)/(sum*sum), (sum*sum)/(w*w*min))
-}
-
-/*func layoutCol(nodes []Node, rect Rectangle) {
-    covered := sumSizes(nodes)
-    height := covered / rect.width
-    calcNodes:= []
-    for i, node := range nodes {
-        calcNodes = append(calcNodes, node)
+func worst(sizes []Node, w float64, h float64) float64 {
+    max := math.Inf(-1)
+    min := math.Inf(1)
+    sum := 0.0
+    for _, size := range sizes {
+        sum += float64(size.Size)
+        max = math.Max(max, float64(size.Size))
+        min = math.Min(min, float64(size.Size))
     }
-}*/
+    //max = (max / 24) * w
+    //min = (min / 24) * w
+
+    fraction := max / sum
+    width := w * fraction
+    otherFraction := sum / 24 
+    height := h * otherFraction 
+    ratio := math.Max(height / width, width / height)
+
+    w =  math.Max((w*w*max)/(sum*sum), (sum*sum)/(w*w*min))
+    fmt.Println("----------------")
+    fmt.Printf("max: %g \n", max)
+    fmt.Printf("min: %g \n", min)
+    fmt.Printf("sum: %g \n", sum)
+    fmt.Printf("width: %g \n", width)
+    fmt.Printf("height: %g \n", height)
+    fmt.Printf("ratio: %g \n", ratio)
+    //fmt.Printf("worst ratio: %g \n", w)
+    return ratio
+}
 
 func sumSizes(nodes []Node) float64 {
     sum := 0.0
