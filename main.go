@@ -48,7 +48,7 @@ func main() {
     if len(arguments) > 1 {
         output = arguments[1]
     }
-    createTreemap(dir, output, 2000, 500);
+    createTreemap(dir, output, 1000, 500);
 }
 
 func createTreemap(dir string, output string, areaX float64, areaY float64) {
@@ -129,6 +129,9 @@ func NewSquarifyDisplay(node Node) Node {
     row := []Node{}
     for _, n := range node.Children {
 
+        fmt.Println()
+        fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+
         vertical := fillArea.height <= fillArea.width 
         widthN := fillArea.width
         heightN := fillArea.height
@@ -137,14 +140,19 @@ func NewSquarifyDisplay(node Node) Node {
             heightN = fillArea.width
         }
         
+        fmt.Printf("fill area width: %g, height: %g \n", fillArea.width, fillArea.height)
         fmt.Printf("is vertical: %t, smallest side: %g \n", vertical, widthN)
 
         rowWithChild := append(row, n)
 
-        if len(row) == 0 || worst(row, widthN, heightN) >= worst(rowWithChild, widthN, heightN) {
+        if len(row) == 0 || worst(row, widthN, heightN, float64(node.Size)) >= worst(rowWithChild, widthN, heightN, float64(node.Size)) {
             row = append(row, n)
         } else {
+            fmt.Printf("fill area w: %g\n", fillArea.width)
+            fmt.Printf("fill area h: %g\n", fillArea.height)
             row = layoutRow(row, widthN, vertical, &fillArea)
+            fmt.Printf("fill area after w: %g\n", fillArea.width)
+            fmt.Printf("fill area after h: %g\n", fillArea.height)
             cache = append(cache, row)
             // TODO: remove the added area from the fullArea
             row = []Node{}
@@ -154,12 +162,17 @@ func NewSquarifyDisplay(node Node) Node {
 
     // maybe a single node is left unprocessed
     if len(row) > 0 {
-        row = layoutRow(row, fillArea.height, true, &fillArea)
+        vertical := fillArea.height <= fillArea.width 
+        widthN := fillArea.width
+        if vertical {
+            widthN = fillArea.height
+        }
+        row = layoutRow(row, widthN, vertical, &fillArea)
         cache = append(cache, row)
         row = []Node{}
     }
 
-    fmt.Println(cache)
+    //fmt.Println(cache)
 
     // update references
     index := 0
@@ -207,8 +220,8 @@ func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangl
     }
 
     area := longestSide * float64(fraction) 
-    fmt.Print("row area: ")
-    fmt.Println(area)
+    //fmt.Print("row area: ")
+    //fmt.Println(area)
 
     for _, node := range row {
         // step 1 - calculate the size of the node
@@ -224,6 +237,7 @@ func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangl
 
             //printNode(node)
         } else {
+            fmt.Printf("area: %g\n", area)
             node.SizeX = smallestSide * nodeOtherSide
             node.SizeY = area 
             node.PositionX = cacheParent.x
@@ -240,14 +254,16 @@ func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangl
     }
 
     if vertical {
-        fmt.Println("vertical is real")
-        parent.x += area
-        parent.width -= area
+        fmt.Printf("vertical is real: %g\n", area)
+        (*parent).x += area
+        (*parent).width -= area
+        fmt.Printf("parent width: %g\n", parent.width)
     } else {
-        parent.y += area
-        parent.height -= area
+        (*parent).y += area
+        (*parent).height -= area
     }
-    return result 
+    (*parent).size -= sizes
+    return result
 }
 
 func printNode(node Node) {
@@ -263,7 +279,7 @@ func printNode(node Node) {
     fmt.Println(node.SizeY)
 }
 
-func worst(sizes []Node, w float64, h float64) float64 {
+func worst(sizes []Node, w float64, h float64, parentSize float64) float64 {
     max := math.Inf(-1)
     min := math.Inf(1)
     sum := 0.0
@@ -272,24 +288,22 @@ func worst(sizes []Node, w float64, h float64) float64 {
         max = math.Max(max, float64(size.Size))
         min = math.Min(min, float64(size.Size))
     }
-    //max = (max / 24) * w
-    //min = (min / 24) * w
 
-    fraction := max / sum
-    width := w * fraction
-    otherFraction := sum / 24 
-    height := h * otherFraction 
-    ratio := math.Max(height / width, width / height)
-
-    w =  math.Max((w*w*max)/(sum*sum), (sum*sum)/(w*w*min))
+    ratio := math.Max(calculateRatio(max, sum, w, h, parentSize), calculateRatio(min, sum, w, h, parentSize))
     fmt.Println("----------------")
     fmt.Printf("max: %g \n", max)
     fmt.Printf("min: %g \n", min)
     fmt.Printf("sum: %g \n", sum)
-    fmt.Printf("width: %g \n", width)
-    fmt.Printf("height: %g \n", height)
-    fmt.Printf("ratio: %g \n", ratio)
     //fmt.Printf("worst ratio: %g \n", w)
+    return ratio
+}
+
+func calculateRatio(value float64, sum float64, w float64, h float64, parentSize float64) float64 {
+    fraction := value / sum
+    width := w * fraction
+    otherFraction := sum / parentSize
+    height := h * otherFraction 
+    ratio := math.Max(height / width, width / height)
     return ratio
 }
 

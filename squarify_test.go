@@ -23,8 +23,8 @@ func TestSquarifyNew(t *testing.T) {
     fmt.Println("-------------------")
     fmt.Println("test squarified new")
     node := createNodes()
-    result := NewSquarifyDisplay(node)
-    fmt.Println(result.Children)
+    NewSquarifyDisplay(node)
+    //fmt.Println(result.Children)
     saveResultToJson("./render/input.json", node)
 }
 
@@ -33,8 +33,8 @@ func createNodes() Node {
         Name: "root",
         PositionX: 0,
         PositionY: 0,
-        SizeX: 1000,
-        SizeY: 500,
+        SizeX: 600,
+        SizeY: 400,
         Size: 24,
         IsDir: true,
         Path: "path",
@@ -42,13 +42,16 @@ func createNodes() Node {
     node.Children = append(node.Children, createNode(6, "first"))
     node.Children = append(node.Children, createNode(6, "second"))
     node.Children = append(node.Children, createNode(4, "third"))
-    node.Children = append(node.Children, createNode(4, "fourth"))
+    node.Children = append(node.Children, createNode(3, "fourth"))
+    node.Children = append(node.Children, createNode(2, "fifth"))
+    node.Children = append(node.Children, createNode(2, "sixth"))
+    node.Children = append(node.Children, createNode(1, "seventh"))
     return node
 }
 
 func saveResultToJson(output string, node Node) {
     result, _ := json.Marshal(node)
-    fmt.Println(string(result))
+    //fmt.Println(string(result))
 
     _ = ioutil.WriteFile(output, result, 0644)
 }
