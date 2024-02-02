@@ -145,14 +145,17 @@ func NewSquarifyDisplay(node Node) Node {
 
         rowWithChild := append(row, n)
 
-        if len(row) == 0 || worst(row, widthN, heightN, float64(node.Size)) >= worst(rowWithChild, widthN, heightN, float64(node.Size)) {
+        if len(row) == 0 || worst(row, widthN, heightN, float64(fillArea.size)) >= worst(rowWithChild, widthN, heightN, float64(fillArea.size)) {
+            fmt.Println("append node to row")
+            fmt.Printf("node.\n")
+            fmt.Println("first ratio:")
+            fmt.Println(worst(row, widthN, heightN, float64(fillArea.size)))
+            fmt.Println("last ratio:")
+            fmt.Println(worst(rowWithChild, widthN, heightN, float64(fillArea.size)))
+            fmt.Println(n)
             row = append(row, n)
         } else {
-            fmt.Printf("fill area w: %g\n", fillArea.width)
-            fmt.Printf("fill area h: %g\n", fillArea.height)
             row = layoutRow(row, widthN, vertical, &fillArea)
-            fmt.Printf("fill area after w: %g\n", fillArea.width)
-            fmt.Printf("fill area after h: %g\n", fillArea.height)
             cache = append(cache, row)
             // TODO: remove the added area from the fullArea
             row = []Node{}
@@ -201,6 +204,8 @@ func NewSquarifyDisplay(node Node) Node {
 }
 
 func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangle) []Node {
+    fmt.Print("layout row ")
+    fmt.Println(row)
     result := []Node{}
     cacheParent := Rectangle {
         x: parent.x,
@@ -237,7 +242,6 @@ func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangl
 
             //printNode(node)
         } else {
-            fmt.Printf("area: %g\n", area)
             node.SizeX = smallestSide * nodeOtherSide
             node.SizeY = area 
             node.PositionX = cacheParent.x
@@ -254,10 +258,8 @@ func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangl
     }
 
     if vertical {
-        fmt.Printf("vertical is real: %g\n", area)
         (*parent).x += area
         (*parent).width -= area
-        fmt.Printf("parent width: %g\n", parent.width)
     } else {
         (*parent).y += area
         (*parent).height -= area
@@ -290,10 +292,10 @@ func worst(sizes []Node, w float64, h float64, parentSize float64) float64 {
     }
 
     ratio := math.Max(calculateRatio(max, sum, w, h, parentSize), calculateRatio(min, sum, w, h, parentSize))
-    fmt.Println("----------------")
+    /*fmt.Println("----------------")
     fmt.Printf("max: %g \n", max)
     fmt.Printf("min: %g \n", min)
-    fmt.Printf("sum: %g \n", sum)
+    fmt.Printf("sum: %g \n", sum)*/
     //fmt.Printf("worst ratio: %g \n", w)
     return ratio
 }
