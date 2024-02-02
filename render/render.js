@@ -78,6 +78,7 @@ function initTree(tree) {
     if (tree.Children === null) {
         return
     }
+    items.push(tree);
     for (node of tree.Children) {
         items.push(
             {
@@ -98,16 +99,38 @@ function initTree(tree) {
 }
 
 function drawTreemap(context) {
+    console.log(items);
+    dirs = [];
     for (node of items) {
-        drawBorder(context, node.positionX, node.positionY, node.sizeX, node.sizeY);
-        context.fillStyle = "#000000";
+        if (node.isDir) {
+            dirs.push(node);
+            context.fillStyle = "#808080";
+        } else {
+            drawBorder(context, node.positionX, node.positionY, node.sizeX, node.sizeY);
+            context.fillStyle = "#000000";
+        }
         context.fillRect(node.positionX, node.positionY, node.sizeX, node.sizeY);
     }
+
+    for (dir of dirs) {
+        drawDirBorder(context, dir.positionX, dir.positionY, dir.sizeX, dir.sizeY, '#8A2BE2');
+    }
+
 }
 
-function drawBorder(ctx, xPos, yPos, width, height, thickness = 2)
+function drawDirBorder(ctx, xPos, yPos, width, height, color = '#fff', thickness = 2)
 {
-  ctx.fillStyle='#fff';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(xPos, yPos, width, height, 0);
+    ctx.stroke();
+}
+
+
+function drawBorder(ctx, xPos, yPos, width, height, color = '#fff', thickness = 2)
+{
+  ctx.fillStyle=color;
   ctx.fillRect(xPos - (thickness), yPos - (thickness), width + (thickness * 2), height + (thickness * 2));
 }
 
