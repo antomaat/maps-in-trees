@@ -113,14 +113,14 @@ function drawTreemap(context) {
     }
 
     for (dir of dirs) {
-        drawDirBorder(context, dir.positionX, dir.positionY, dir.sizeX, dir.sizeY, '#8A2BE2');
+        drawDirBorder(context, dir.positionX, dir.positionY, dir.sizeX, dir.sizeY, '#8A2BE2', 4);
     }
 
 }
 
 function drawDirBorder(ctx, xPos, yPos, width, height, color = '#fff', thickness = 2)
 {
-    ctx.lineWidth = 4;
+    ctx.lineWidth = thickness;
     ctx.strokeStyle = color;
     ctx.beginPath();
     ctx.roundRect(xPos, yPos, width, height, 0);
