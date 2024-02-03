@@ -13,7 +13,25 @@ const path = document.getElementById("path");
 
 const context = createCanvas();
 
+let selectedNode = undefined
+
 loadJson().then(tree => {tree;});
+
+function onSearch() {
+    const searchTerm = document.getElementById("search_file").value.trim()
+    console.log("search term ", searchTerm)
+    for (node of items) {
+        if (node.name === searchTerm) {
+            selectedNode = node;
+            drawSelectedNode(node);
+        }
+    }
+}
+
+function drawSelectedNode(node) {
+    context.fillStyle = "#F5F5DC";
+    context.fillRect(node.positionX, node.positionY, node.sizeX, node.sizeY);
+}
 
 function createCanvas() {
     canvas = document.getElementById("myCanvas");
@@ -38,6 +56,7 @@ function onMouseMove(event) {
 
 function run() {
     while(shouldRedraw) {
+        console.log("redraw");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#FF0000";
         ctx.fillRect(0, 0, 2000, 500);
