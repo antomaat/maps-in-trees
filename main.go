@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"slices"
 	"sort"
 )
 
@@ -35,6 +36,7 @@ type Rectangle struct {
     size float64
 }
 
+
 func main() {
 
     arguments := os.Args[1:]
@@ -51,14 +53,29 @@ func main() {
     createTreemap(dir, output, 1000, 500);
 }
 
+func isIgnoredDir(name string) bool {
+    ignoredList := []string{".git", "build", "gradle", ".gradle", ".idea"}
+    return slices.Contains(ignoredList, name)
+}
+
 func createTreemap(dir string, output string, areaX float64, areaY float64) {
     node := createTree(dir, dir)
     node.SizeX = areaX
     node.SizeY = areaY
+    debug, _ := json.Marshal(node)
+    _ = ioutil.WriteFile("debug.json", debug, 0644)
     //fmt.Println(node)
     //node = updateDisplay(node, 0)
     node = NewSquarifyDisplay(node)
-    result, _ := json.Marshal(node)
+    fmt.Print("result is : ")
+    fmt.Println(node)
+    result, error := json.Marshal(node)
+    if error != nil {
+        err := error.(*json.UnsupportedValueError)
+        fmt.Println(error.Error())
+        fmt.Println(err.Value.Addr())
+    }
+    fmt.Println("finished")
     fmt.Println(string(result))
 
     _ = ioutil.WriteFile(output, result, 0644)
@@ -77,14 +94,16 @@ func createTree(dirName string, pathName string) Node {
     }
 
     items, _ := os.ReadDir(pathName)
+    fmt.Println(pathName)
+    fmt.Println(items)
 
     for i := 0; i < len(items); i++ {
         child := Node {}
         info, _ := items[i].Info()
-        if items[i].IsDir() {
+        if items[i].IsDir() && !isIgnoredDir(items[i].Name()) {
             fmt.Print(items[i].Name())
             fmt.Println(": is dir")
-            child = createTree(items[i].Name(), dirName + "/" + items[i].Name())
+            child = createTree(items[i].Name(), pathName + "/" + items[i].Name())
         } else {
             child = Node { 
                 Name: items[i].Name(),
@@ -98,22 +117,27 @@ func createTree(dirName string, pathName string) Node {
             }
         }
 
-        node.Children = append(node.Children, child)
-        //node.SizeX += child.SizeX
-        node.Size += child.Size;
+        // add only if the file is bigger than 0
+        if (child.Size > 0) {
+            node.Children = append(node.Children, child)
+            //node.SizeX += child.SizeX
+            node.Size += child.Size;
+        }
     }
 
     sort.SliceStable(node.Children, func(i, j int) bool {
         return node.Children[i].Size > node.Children[j].Size
     })
-    fmt.Println("sorted array")
-    fmt.Println(node.Children)
    
     return node
 }
 
 
 func NewSquarifyDisplay(node Node) Node {
+
+    fmt.Print("start directory: ")
+    fmt.Println(node)
+
     fillArea := Rectangle {
         x: node.PositionX,
         y: node.PositionY,
@@ -146,13 +170,15 @@ func NewSquarifyDisplay(node Node) Node {
         rowWithChild := append(row, n)
 
         if len(row) == 0 || worst(row, widthN, heightN, float64(fillArea.size)) >= worst(rowWithChild, widthN, heightN, float64(fillArea.size)) {
-            fmt.Println("append node to row")
-            fmt.Printf("node.\n")
-            fmt.Println("first ratio:")
-            fmt.Println(worst(row, widthN, heightN, float64(fillArea.size)))
-            fmt.Println("last ratio:")
-            fmt.Println(worst(rowWithChild, widthN, heightN, float64(fillArea.size)))
-            fmt.Println(n)
+            if len(row) != 0 {
+                fmt.Println("append node to row")
+                fmt.Println(row)
+                fmt.Println("first ratio:")
+                fmt.Println(worst(row, widthN, heightN, float64(fillArea.size)))
+                fmt.Println("last ratio:")
+                fmt.Println(worst(rowWithChild, widthN, heightN, float64(fillArea.size)))
+                fmt.Println(n)
+            } 
             row = append(row, n)
         } else {
             row = layoutRow(row, widthN, vertical, &fillArea)
@@ -171,6 +197,7 @@ func NewSquarifyDisplay(node Node) Node {
             widthN = fillArea.height
         }
         row = layoutRow(row, widthN, vertical, &fillArea)
+        fmt.Println("layout finished, remove elements from row")
         cache = append(cache, row)
         row = []Node{}
     }
@@ -200,6 +227,7 @@ func NewSquarifyDisplay(node Node) Node {
         indx := directories[j]
         node.Children[indx] = NewSquarifyDisplay(node.Children[indx])
     }
+
     return node
 }
 
@@ -225,8 +253,8 @@ func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangl
     }
 
     area := longestSide * float64(fraction) 
-    //fmt.Print("row area: ")
-    //fmt.Println(area)
+    fmt.Print("row area: ")
+    fmt.Println(area)
 
     for _, node := range row {
         // step 1 - calculate the size of the node
@@ -445,3 +473,4 @@ func updateDisplay(node Node, level int) Node {
 
     return node
 }
+
