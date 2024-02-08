@@ -67,16 +67,10 @@ func createTreemap(dir string, output string, areaX float64, areaY float64) {
     //fmt.Println(node)
     //node = updateDisplay(node, 0)
     node = NewSquarifyDisplay(node)
-    fmt.Print("result is : ")
-    fmt.Println(node)
     result, error := json.Marshal(node)
     if error != nil {
-        err := error.(*json.UnsupportedValueError)
         fmt.Println(error.Error())
-        fmt.Println(err.Value.Addr())
     }
-    fmt.Println("finished")
-    fmt.Println(string(result))
 
     _ = ioutil.WriteFile(output, result, 0644)
 }
@@ -135,9 +129,6 @@ func createTree(dirName string, pathName string) Node {
 
 func NewSquarifyDisplay(node Node) Node {
 
-    fmt.Print("start directory: ")
-    fmt.Println(node)
-
     fillArea := Rectangle {
         x: node.PositionX,
         y: node.PositionY,
@@ -145,17 +136,10 @@ func NewSquarifyDisplay(node Node) Node {
         height: node.SizeY,
         size: float64(node.Size),
     }
-    //fullSize := node.Size
-    //vertical := fillArea.height <= fillArea.width 
-    //children := node.Children
     directories := []int{}
     cache := [][]Node{}
     row := []Node{}
     for _, n := range node.Children {
-
-        fmt.Println()
-        fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-
         vertical := fillArea.height <= fillArea.width 
         widthN := fillArea.width
         heightN := fillArea.height
@@ -163,27 +147,14 @@ func NewSquarifyDisplay(node Node) Node {
             widthN = fillArea.height
             heightN = fillArea.width
         }
-        
-        fmt.Printf("fill area width: %g, height: %g \n", fillArea.width, fillArea.height)
-        fmt.Printf("is vertical: %t, smallest side: %g \n", vertical, widthN)
 
         rowWithChild := append(row, n)
 
         if len(row) == 0 || worst(row, widthN, heightN, float64(fillArea.size)) >= worst(rowWithChild, widthN, heightN, float64(fillArea.size)) {
-            if len(row) != 0 {
-                fmt.Println("append node to row")
-                fmt.Println(row)
-                fmt.Println("first ratio:")
-                fmt.Println(worst(row, widthN, heightN, float64(fillArea.size)))
-                fmt.Println("last ratio:")
-                fmt.Println(worst(rowWithChild, widthN, heightN, float64(fillArea.size)))
-                fmt.Println(n)
-            } 
             row = append(row, n)
         } else {
             row = layoutRow(row, widthN, vertical, &fillArea)
             cache = append(cache, row)
-            // TODO: remove the added area from the fullArea
             row = []Node{}
             row = append(row, n)
         }
@@ -197,13 +168,9 @@ func NewSquarifyDisplay(node Node) Node {
             widthN = fillArea.height
         }
         row = layoutRow(row, widthN, vertical, &fillArea)
-        fmt.Println("layout finished, remove elements from row")
         cache = append(cache, row)
         row = []Node{}
     }
-
-    //fmt.Println(cache)
-
     // update references
     index := 0
     for _, nList := range cache {
@@ -232,8 +199,6 @@ func NewSquarifyDisplay(node Node) Node {
 }
 
 func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangle) []Node {
-    fmt.Print("layout row ")
-    fmt.Println(row)
     result := []Node{}
     cacheParent := Rectangle {
         x: parent.x,
@@ -253,8 +218,6 @@ func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangl
     }
 
     area := longestSide * float64(fraction) 
-    fmt.Print("row area: ")
-    fmt.Println(area)
 
     for _, node := range row {
         // step 1 - calculate the size of the node
@@ -268,7 +231,6 @@ func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangl
 
             cacheParent.y += node.SizeY
 
-            //printNode(node)
         } else {
             node.SizeX = smallestSide * nodeOtherSide
             node.SizeY = area 
@@ -277,12 +239,9 @@ func layoutRow(row []Node, smallestSide float64, vertical bool, parent *Rectangl
 
             cacheParent.x += node.SizeX
 
-            //printNode(node)
         }
 
         result = append(result, node)
-        // step 2 - remove the size of the node from cacheParent
-        // step 3 - remove the locations from the real parent
     }
 
     if vertical {
@@ -320,11 +279,6 @@ func worst(sizes []Node, w float64, h float64, parentSize float64) float64 {
     }
 
     ratio := math.Max(calculateRatio(max, sum, w, h, parentSize), calculateRatio(min, sum, w, h, parentSize))
-    /*fmt.Println("----------------")
-    fmt.Printf("max: %g \n", max)
-    fmt.Printf("min: %g \n", min)
-    fmt.Printf("sum: %g \n", sum)*/
-    //fmt.Printf("worst ratio: %g \n", w)
     return ratio
 }
 
@@ -343,134 +297,5 @@ func sumSizes(nodes []Node) float64 {
         sum += float64(n.Size)
     }
     return sum
-}
-
-func SquarifyDisplay(node Node) Rectangle {
-    fillArea := Rectangle {
-        x: node.PositionX,
-        y: node.PositionY,
-        width: node.SizeX,
-        height: node.SizeY,
-    }
-
-    fullSize := node.Size
-
- //   results := [][]Rectangle{}
-    //active := []Rectangle{}
-
-    vertical := fillArea.height <= fillArea.width 
-    cachedSize := 0
-    for i := 0; i < len(node.Children); i++ {
-
-        if vertical {
-            child := node.Children[0]
-            //rect := Rectangle{x: fillArea.x, y: fillArea.y} 
-            cachedSize += int(child.Size)
-            fmt.Print("cached size: ")
-            fmt.Println(cachedSize)
-            fraction := float64(cachedSize) / float64(fullSize)
-            tmpWidth := fillArea.width * float64(fraction)
-            tmpHeight := float64(cachedSize) / float64(tmpWidth)
-            rect := Rectangle{width: tmpWidth, height: tmpHeight}
-            
-            // get the worst ratio there is from the list of rects
-            worst := max(rect.width / rect.height, rect.height / rect.width)
-            /*for _, r := range active {
-                cached := max(r.width / r.height, r.height / r.width)
-            }*/
-            fmt.Print("w: ")
-            fmt.Println(tmpWidth)
-            fmt.Print("h: ")
-            fmt.Println(tmpHeight)
-            fmt.Print("worst ")
-            fmt.Println(worst)
-        } 
-    }
-
-    if vertical {
-        child := node.Children[0]
-        rect := Rectangle{x: fillArea.x, y: fillArea.y} 
-
-        fraction := child.Size / fullSize
-        rect.width = fillArea.width * float64(fraction)
-        rect.height = fillArea.height
-        return rect
-    }
-    return Rectangle {} 
-}
-
-
-func updateDisplay(node Node, level int) Node {
-    directories := []int{}
-    corner := Vector2 {
-        x: node.PositionX, 
-        y: node.PositionY,
-    }
-    scale := Vector2 {
-        x: node.SizeX,
-        y: node.SizeY,
-    }
-
-    fmt.Println("-------------------")
-    fmt.Print("parent size: ")
-    fmt.Println(node.Size)
-    fmt.Print("parent scale: ")
-    fmt.Println(scale)
-
-
-    for i := 0; i < len(node.Children); i++ {
-
-        child := node.Children[i]
-
-        if level % 2 == 0 {
-            fraction :=  float64(child.Size) / float64(node.Size)
-            area := scale.x * float64(fraction) 
-
-            child.SizeX = area
-            child.SizeY = scale.y 
-
-            child.PositionX = corner.x
-            corner.x += child.SizeX
-            fmt.Println(" new child ------")
-            fmt.Print(" size: ")
-            fmt.Println(child.Size)
-            fmt.Print(" fraction: ")
-            fmt.Println(fraction)
-            fmt.Print(" area: ")
-            fmt.Println(area)
-        } else {
-            fmt.Println("level is odd")
-            fraction :=  float64(child.Size) / float64(node.Size)
-            area := scale.y * float64(fraction) 
-
-            child.SizeX = scale.x 
-            child.SizeY = area 
-
-            child.PositionY = corner.y
-            corner.y += child.SizeY
-        }
-
-        node.Children[i] = child
-
-        if child.IsDir {
-            directories = append(directories, i)
-        }
-    }
-
-    for j := 0; j < len(directories); j++ {
-        index := directories[j]
-        /*fmt.Println("=====================")
-        fmt.Println(node.Children[index])
-        fmt.Println(node.Children[index].Name)
-        fmt.Printf("posx %f \n", node.Children[index].PositionX)
-        fmt.Printf("posy %f \n", node.Children[index].PositionY)
-        fmt.Printf("scalex %f \n", node.Children[index].SizeX)
-        fmt.Printf("scaley %f \n", node.Children[index].SizeY)
-        */
-        node.Children[index] = updateDisplay(node.Children[index], level + 1)
-        //fmt.Println(node.Children[index])
-    }
-
-    return node
 }
 
