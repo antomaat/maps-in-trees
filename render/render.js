@@ -19,9 +19,9 @@ loadJson().then(tree => {tree;});
 
 function onSearch() {
     const searchTerm = document.getElementById("search_file").value.trim()
-    console.log("search term ", searchTerm)
     for (node of items) {
-        if (node.name === searchTerm) {
+        if (node.name === undefined) continue;
+        if (node.name.includes(searchTerm)) {
             selectedNode = node;
             drawSelectedNode(node);
         }
