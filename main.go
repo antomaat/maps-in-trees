@@ -46,6 +46,7 @@ func main() {
         os.Exit(1) 
     }
 
+
     dir := arguments[0]
     output := "./input.json"
     isJvm := true 
@@ -99,7 +100,7 @@ func createJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
             child = createJvmTree(items[i].Name(), pathName + "/" + items[i].Name(), isJvm, rootDir)
         } else {
             classFile := findFileInBuildDir(items[i].Name(), rootDir, pathName)
-            getFileInfo(classFile)
+            ParseFileInfo(classFile)
             child = Node { 
                 Name: items[i].Name(),
                 PositionX: 0,
@@ -125,12 +126,6 @@ func createJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
     })
    
     return node
-}
-
-
-
-func getFileInfo(dir []byte) {
-
 }
 
 func findFileInBuildDir(fileName string, rootDir string, pathName string) []byte  {
