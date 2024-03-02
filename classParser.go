@@ -53,11 +53,11 @@ type ConstantStringInfo struct {
 }
 
 type ConstantIntegerInfo struct {
-    bytes []byte
+    bytes uint32
 }
 
 type ConstantFloatInfo struct {
-    bytes []byte
+    bytes uint32
 }
 
 type ConstantLongInfo struct {
@@ -90,6 +90,7 @@ type ConstantInvokeDynamicInfo struct {
 }
 
 func ParseFileInfo(file []byte) {
+    fmt.Println("parse file info")
     index := 0;
     if len(file) > 0 {
         if !isValidFile(file) {
@@ -127,8 +128,20 @@ func updateConstantPoolItem(poolItem *ConstantPool, bytes []byte, index int) {
             length: int(length),
             bytes: string,
         }
-    case 3,4:
-        
+    case 3:
+        fmt.Println("3 or 4")
+        numb := binary.BigEndian.Uint32(bytes[index: index + 4])
+        index += 4;
+        poolItem.constantIntegerInfo = ConstantIntegerInfo{
+            bytes: numb,
+        }
+    case 4:
+        numb := binary.BigEndian.Uint32(bytes[index: index + 4])
+        index += 4;
+        poolItem.constantFloatInfo = ConstantFloatInfo {
+            bytes: numb,
+        }
+
     default:
         fmt.Println("missing tag")
     }
