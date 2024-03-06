@@ -59,7 +59,7 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
 func findFileInBuildDir(fileName string, rootDir string, pathName string) []byte  {
     //items, _ := os.ReadDir(rootDir + "/build/classes")
     if (strings.Contains(fileName, ".kt")) {
-        fmt.Println("here is the info: \n")
+        fmt.Println("here is the info: ")
         fmt.Printf("filename %s: \n", fileName)
         fmt.Printf("rootDir %s: \n", rootDir)
         fmt.Printf("pathName %s: \n", pathName)

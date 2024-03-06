@@ -27,12 +27,13 @@ func (fp FileParser) readValue(bytes int64) []byte {
 
 func (fp *FileParser) readValueAndUpdateIndexBy(bytes int64) []byte {
     value := fp.file[fp.index: fp.index + bytes]
+    //fmt.Println(value)
     fp.index += bytes
     return value
 }
 
 type ConstantPool struct {
-    tag int
+    tag uint 
     constantUtf8 ConstantUtf8
     classInfo ClassInfo
     fieldRef FieldRef
@@ -59,18 +60,18 @@ type ClassInfo struct {
 }
 
 type FieldRef struct {
-    classIndex int
-    nameAndTypeIndex int
+    classIndex uint16 
+    nameAndTypeIndex uint16 
 }
 
 type MethodRef struct {
-    classIndex int
-    nameAndTypeIndex int
+    classIndex uint16 
+    nameAndTypeIndex uint16 
 }
 
 type InterfaceMethodRef struct {
-    classIndex int
-    nameAndTypeIndex int
+    classIndex uint16 
+    nameAndTypeIndex uint16 
 }
 
 type ConstantStringInfo struct {
@@ -96,22 +97,22 @@ type ConstantDoubleInfo struct {
 }
 
 type ConstantNameAndTypeInfo struct {
-    nameIndex int
-    descriptionIndex int
+    nameIndex uint16 
+    descriptionIndex uint16 
 }
 
 type ConstantMethodHandleInfo struct {
-    referenceKind int
-    referenceIndex int
+    referenceKind uint16 
+    referenceIndex uint16
 }
 
 type ConstantMethodTypeInfo struct {
-    descriptorIndex int
+    descriptorIndex uint16 
 }
 
 type ConstantInvokeDynamicInfo struct {
-    bootstrapMethodAttrIndex int
-    nameAndTypeIndex int
+    bootstrapMethodAttrIndex uint16 
+    nameAndTypeIndex uint16 
 }
 
 func ParseFileInfo(file []byte) {
@@ -121,30 +122,69 @@ func ParseFileInfo(file []byte) {
     }
 
     fmt.Println("parse file info")
-    index := 0;
     if len(fileParser.file) > 0 {
         if !isValidFile(fileParser) {
             return
         }
+        cafe := fileParser.readValueAndUpdateIndexBy(4)
+        cafeStr := hex.EncodeToString(cafe)
+        fmt.Println(cafeStr)
+        minor := fileParser.readValueAndUpdateIndexBy(2)
+        major := fileParser.readValueAndUpdateIndexBy(2)
+        fmt.Println(binary.BigEndian.Uint16(minor))
+        fmt.Println(binary.BigEndian.Uint16(major))
 
-        fileParser.readValueAndUpdateIndexBy(8)
+
+        //fileParser.readValueAndUpdateIndexBy(8)
         // skip the magic number, minor and major versions
         constantPoolCount := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2))
         fmt.Printf("constant pool count %d \n", constantPoolCount)
-        index += int(constantPoolCount)
-
         constantPool := []ConstantPool{}
 
+        //for i := 0; i < 1; i++ {
         for i := 0; i < int(constantPoolCount) - 1; i++ {
+            nextTag := fileParser.readValueAndUpdateIndexBy(1)
             poolItem := ConstantPool{
-                    tag: int(file[index]),
-                }
-            index++;
+                tag: uint(nextTag[0]),
+            }
             updateConstantPoolItem(&poolItem, &fileParser)
             constantPool = append(constantPool, poolItem)
-            printConstantPool(poolItem)
+            //printConstantPool(poolItem)
+        } 
+        for i := 0; i < len(constantPool); i++ {
+            parseFinishedConstantPool(constantPool[i], constantPool)
         }
     }
+
+}
+
+func parseFinishedConstantPool(poolItem ConstantPool, constantPool []ConstantPool) {
+    //fmt.Printf("item tag %d \n", poolItem.tag)
+    switch tag := poolItem.tag; tag {
+    case 7:
+        fmt.Println(parseNameIndex(constantPool, uint(poolItem.classInfo.nameIndex -1)))
+    case 9:
+        fmt.Println("tag is 9")
+        fieldRef := poolItem.fieldRef
+        classIndex:= constantPool[fieldRef.classIndex -1].classInfo
+        name := parseNameIndex(constantPool, uint(classIndex.nameIndex))
+        fmt.Printf("string %s\n", name)
+        parseNameAndType(constantPool, uint(fieldRef.nameAndTypeIndex - 1))
+    }
+}
+
+func parseNameIndex(cp []ConstantPool, index uint) string {
+    className := cp[index].constantUtf8.bytes
+    return string(className)
+}
+
+func parseNameAndType(cp []ConstantPool, index uint) string {
+    nameAndType := cp[index].constantNameAndTypeInfo
+    name := string(cp[nameAndType.nameIndex - 1].constantUtf8.bytes)
+    description:= string(cp[nameAndType.descriptionIndex -1].constantUtf8.bytes)
+    fmt.Printf("name: %s \n", name)
+    fmt.Printf("description: %s \n", description)
+    return ""
 }
 
 func updateConstantPoolItem(poolItem *ConstantPool, fileParser *FileParser) {
@@ -181,12 +221,59 @@ func updateConstantPoolItem(poolItem *ConstantPool, fileParser *FileParser) {
             lowBytes: low,
         }
     case 7:
-        nameIndex := binary.BigEndian.Uint64(fileParser.readValueAndUpdateIndexBy(2))    
+        nameIndex := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2))    
 
         poolItem.classInfo = ClassInfo{
             nameIndex: int(nameIndex),
         }
+    case 8:
+        stringIndex := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2))    
+        poolItem.constantStringInfo = ConstantStringInfo {
+            stringIndex: int(stringIndex),
+        }
+    case 9:
+        classIndex := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2))
+        nameAndTypeIndex := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)) 
 
+        poolItem.fieldRef = FieldRef {
+            classIndex: classIndex,
+            nameAndTypeIndex: nameAndTypeIndex,
+        }
+    case 10:
+        classIndex := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2))
+        nameAndTypeIndex := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)) 
+
+        poolItem.methodRef = MethodRef {
+            classIndex: classIndex,
+            nameAndTypeIndex: nameAndTypeIndex,
+        }
+    case 11:
+        classIndex := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2))
+        nameAndTypeIndex := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)) 
+
+        poolItem.interfaceMethodRef = InterfaceMethodRef {
+            classIndex: classIndex,
+            nameAndTypeIndex: nameAndTypeIndex,
+        }
+    case 12:
+        poolItem.constantNameAndTypeInfo = ConstantNameAndTypeInfo{
+            nameIndex: binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)),
+            descriptionIndex: binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)),
+        }
+    case 15:
+        poolItem.constantMethodHandleInfo = ConstantMethodHandleInfo{
+            referenceKind: binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)),
+            referenceIndex: binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)),
+        }
+    case 16:
+        poolItem.constantMethodTypeInfo = ConstantMethodTypeInfo{
+            descriptorIndex: binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)),
+        }
+    case 18:
+        poolItem.constantInvokeDynamicInfo = ConstantInvokeDynamicInfo{
+            bootstrapMethodAttrIndex: binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)),
+            nameAndTypeIndex: binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)),
+        }
     default:
         fmt.Printf("missing tag %d \n", tag)
     }
@@ -220,5 +307,12 @@ func printConstantPool(cp ConstantPool) {
         fmt.Printf("double high: %d \n", cp.constantDoubleInfo.highBytes)
     case 7:
         fmt.Printf("class %d \n", cp.classInfo.nameIndex)
+    case 8:
+        fmt.Printf("string %d \n", cp.constantStringInfo.stringIndex)
+    case 9:
+        fmt.Printf("fieldref class index %d \n", cp.fieldRef.classIndex)
+    case 10:
+        fmt.Printf("method ref class index %d \n", cp.methodRef.classIndex)
+        fmt.Printf("method ref name and type index %d \n", cp.methodRef.nameAndTypeIndex)
     }
 }
