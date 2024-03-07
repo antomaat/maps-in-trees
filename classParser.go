@@ -32,6 +32,12 @@ func (fp *FileParser) readValueAndUpdateIndexBy(bytes int64) []byte {
     return value
 }
 
+type ParseResult struct {
+    className string
+    superClassName string
+    fields []string
+}
+
 type ConstantPool struct {
     tag uint 
     constantUtf8 ConstantUtf8
@@ -115,27 +121,36 @@ type ConstantInvokeDynamicInfo struct {
     nameAndTypeIndex uint16 
 }
 
+
+type FieldInfo struct {
+    accessFlags uint16 
+    name string 
+    descriptor string 
+    attributeCount uint16 
+    attributes []Attribute
+}
+
+type Attribute struct {
+    name string
+    attributeLength uint32
+    bytes []byte
+}
+
 func ParseFileInfo(file []byte) {
     fileParser := FileParser {
         index: 0,
         file: file,
     }
 
+    result := ParseResult{}
+
     fmt.Println("parse file info")
     if len(fileParser.file) > 0 {
         if !isValidFile(fileParser) {
             return
         }
-        cafe := fileParser.readValueAndUpdateIndexBy(4)
-        cafeStr := hex.EncodeToString(cafe)
-        fmt.Println(cafeStr)
-        minor := fileParser.readValueAndUpdateIndexBy(2)
-        major := fileParser.readValueAndUpdateIndexBy(2)
-        fmt.Println(binary.BigEndian.Uint16(minor))
-        fmt.Println(binary.BigEndian.Uint16(major))
 
-
-        //fileParser.readValueAndUpdateIndexBy(8)
+        fileParser.readValueAndUpdateIndexBy(8)
         // skip the magic number, minor and major versions
         constantPoolCount := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2))
         fmt.Printf("constant pool count %d \n", constantPoolCount)
@@ -154,38 +169,57 @@ func ParseFileInfo(file []byte) {
         for i := 0; i < len(constantPool); i++ {
             parseFinishedConstantPool(constantPool[i], constantPool)
         }
+
+        //access flags
+        fileParser.readValueAndUpdateIndexBy(2)
+        // add class name
+        result.className = parseNameFromNextBytes(&fileParser, constantPool) 
+
+        // add super class name
+        result.superClassName = parseNameFromNextBytes(&fileParser, constantPool) 
+        fmt.Printf("class name %s \n", result.className)
+        fmt.Printf("super class name %s \n", result.superClassName)
+        // interfaces
+        // interface count
+        interfaceCount := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2))
+        fmt.Printf("interface count %d \n", interfaceCount)
+        if interfaceCount > 0 {
+            panic("interface support is not present")
+        }
+        // add fields
+        fieldsCount := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)) 
+        fmt.Printf("fields count %d \n", fieldsCount)
+        for i:= 0; i < int(fieldsCount); i++ {
+            fieldInfo := parseFieldInfo(&fileParser, constantPool)
+            fmt.Printf("field info name %s \n", fieldInfo.name)
+        }
     }
-
 }
 
-func parseFinishedConstantPool(poolItem ConstantPool, constantPool []ConstantPool) {
-    //fmt.Printf("item tag %d \n", poolItem.tag)
-    switch tag := poolItem.tag; tag {
-    case 7:
-        fmt.Println(parseNameIndex(constantPool, uint(poolItem.classInfo.nameIndex -1)))
-    case 9:
-        fmt.Println("tag is 9")
-        fieldRef := poolItem.fieldRef
-        classIndex:= constantPool[fieldRef.classIndex -1].classInfo
-        name := parseNameIndex(constantPool, uint(classIndex.nameIndex))
-        fmt.Printf("string %s\n", name)
-        parseNameAndType(constantPool, uint(fieldRef.nameAndTypeIndex - 1))
+func parseFieldInfo(fp *FileParser, constantPool []ConstantPool) FieldInfo {
+    fieldInfo := FieldInfo{}
+
+    fieldInfo.accessFlags = binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2))
+    name := parseNameIndex(constantPool, uint(binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2))))
+    descriptor := parseNameIndex(constantPool, uint(binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2))))
+
+    fieldInfo.name = name
+    fieldInfo.descriptor = descriptor 
+    fieldInfo.attributeCount = binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2))
+    for i := 0; i < int(fieldInfo.attributeCount); i++ {
+        attribute := Attribute{}
+        nameIndex:= binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2))
+        attribute.name = parseNameIndex(constantPool, uint(nameIndex)) 
+        attributeLenBytes := fp.readValueAndUpdateIndexBy(4)
+        fmt.Printf("attr len bytes %v \n", attributeLenBytes)
+        fmt.Printf("attr len bytes %d \n", binary.BigEndian.Uint32(attributeLenBytes))
+        attribute.attributeLength = binary.BigEndian.Uint32(attributeLenBytes)
+        attribute.bytes = fp.readValueAndUpdateIndexBy(int64(attribute.attributeLength))
+        fieldInfo.attributes = append(fieldInfo.attributes, attribute)
     }
+    return fieldInfo
 }
 
-func parseNameIndex(cp []ConstantPool, index uint) string {
-    className := cp[index].constantUtf8.bytes
-    return string(className)
-}
-
-func parseNameAndType(cp []ConstantPool, index uint) string {
-    nameAndType := cp[index].constantNameAndTypeInfo
-    name := string(cp[nameAndType.nameIndex - 1].constantUtf8.bytes)
-    description:= string(cp[nameAndType.descriptionIndex -1].constantUtf8.bytes)
-    fmt.Printf("name: %s \n", name)
-    fmt.Printf("description: %s \n", description)
-    return ""
-}
 
 func updateConstantPoolItem(poolItem *ConstantPool, fileParser *FileParser) {
     switch tag := poolItem.tag; tag {
@@ -315,4 +349,54 @@ func printConstantPool(cp ConstantPool) {
         fmt.Printf("method ref class index %d \n", cp.methodRef.classIndex)
         fmt.Printf("method ref name and type index %d \n", cp.methodRef.nameAndTypeIndex)
     }
+}
+
+func parseFinishedConstantPool(poolItem ConstantPool, constantPool []ConstantPool) {
+    //fmt.Printf("item tag %d \n", poolItem.tag)
+    switch tag := poolItem.tag; tag {
+    case 7:
+        fmt.Println(parseNameIndex(constantPool, uint(poolItem.classInfo.nameIndex -1)))
+    case 9:
+        fmt.Println("tag is 9")
+        fieldRef := poolItem.fieldRef
+        classIndex:= constantPool[fieldRef.classIndex -1].classInfo
+        name := parseNameIndex(constantPool, uint(classIndex.nameIndex))
+        fmt.Printf("string %s\n", name)
+        parseNameAndType(constantPool, uint(fieldRef.nameAndTypeIndex - 1))
+    case 10:
+        fmt.Println("tag is 10")
+        methodRef := poolItem.methodRef
+        classIndex:= constantPool[methodRef.classIndex -1].classInfo
+        name := parseNameIndex(constantPool, uint(classIndex.nameIndex))
+        fmt.Printf("string %s\n", name)
+        parseNameAndType(constantPool, uint(methodRef.nameAndTypeIndex - 1))
+    case 11:
+        fmt.Println("tag is 11")
+        methodRef := poolItem.interfaceMethodRef
+        classIndex:= constantPool[methodRef.classIndex -1].classInfo
+        name := parseNameIndex(constantPool, uint(classIndex.nameIndex))
+        fmt.Printf("string %s\n", name)
+        parseNameAndType(constantPool, uint(methodRef.nameAndTypeIndex - 1))
+    }
+
+}
+
+func parseNameIndex(cp []ConstantPool, index uint) string {
+    className := cp[index].constantUtf8.bytes
+    return string(className)
+}
+
+func parseNameAndType(cp []ConstantPool, index uint) string {
+    nameAndType := cp[index].constantNameAndTypeInfo
+    name := string(cp[nameAndType.nameIndex - 1].constantUtf8.bytes)
+    description:= string(cp[nameAndType.descriptionIndex -1].constantUtf8.bytes)
+    fmt.Printf("name: %s \n", name)
+    fmt.Printf("description: %s \n", description)
+    return ""
+}
+
+func parseNameFromNextBytes(fileParser *FileParser, constantPool []ConstantPool) string {
+        superClassNameIndex := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)) 
+        superClassInfo := constantPool[superClassNameIndex - 1].classInfo
+        return parseNameIndex(constantPool, uint(superClassInfo.nameIndex - 1))
 }

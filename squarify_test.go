@@ -7,18 +7,6 @@ import (
 	"testing"
 )
 
-func TestSquarify(t *testing.T) {
-    node := createNodes()
-    rect := SquarifyDisplay(node)
-    if rect.SizeY != 4   {
-        t.Fatal("node height is messed up")
-    }
-    if rect.SizeX != 6 * (6 /  24)   {
-        t.Fatal("node height is messed up")
-    }
-}
-
-
 func TestSquarifyNew(t *testing.T) {
     fmt.Println("-------------------")
     fmt.Println("test squarified new")
