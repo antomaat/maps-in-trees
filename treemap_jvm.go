@@ -28,7 +28,11 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
             child = CreateJvmTree(items[i].Name(), pathName + "/" + items[i].Name(), isJvm, rootDir)
         } else {
             classFile := findFileInBuildDir(items[i].Name(), rootDir, pathName)
-            ParseFileInfo(classFile)
+            optionalInfo := OptionalInfo{}
+            if classFile != nil {
+                fileInfo := ParseFileInfo(classFile)
+                optionalInfo.Fields = fileInfo.fields
+            }
             child = Node { 
                 Name: items[i].Name(),
                 PositionX: 0,
@@ -38,7 +42,11 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
                 Size: info.Size(), 
                 IsDir: false,
                 Path: pathName,
+                OptionalInfo: optionalInfo,
             }
+            fmt.Println("optional info fields ")
+            fmt.Println(child.OptionalInfo.Fields)
+            fmt.Println("------------------")
         }
 
         // add only if the file is bigger than 0
@@ -52,17 +60,17 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
     sort.SliceStable(node.Children, func(i, j int) bool {
         return node.Children[i].Size > node.Children[j].Size
     })
-   
+
     return node
 }
 
 func findFileInBuildDir(fileName string, rootDir string, pathName string) []byte  {
     //items, _ := os.ReadDir(rootDir + "/build/classes")
     if (strings.Contains(fileName, ".kt")) {
-        fmt.Println("here is the info: ")
+        //fmt.Println("here is the info: ")
         fmt.Printf("filename %s: \n", fileName)
-        fmt.Printf("rootDir %s: \n", rootDir)
-        fmt.Printf("pathName %s: \n", pathName)
+        //fmt.Printf("rootDir %s: \n", rootDir)
+        //fmt.Printf("pathName %s: \n", pathName)
         trimPathName := strings.TrimPrefix(pathName, rootDir + "/src/")
         trimPathName = strings.Replace(trimPathName, "kotlin/", "", 1)
         trimFileName := strings.Replace(fileName, ".kt", "", -1)
@@ -70,14 +78,12 @@ func findFileInBuildDir(fileName string, rootDir string, pathName string) []byte
         trimFileName += ".class"
         buildDir := rootDir + "/build/classes/kotlin/" + trimPathName
         //buildDir = buildDir + "/" + trimFileName + ".class"
-        fmt.Printf("trim path end: %s \n", trimPathName)
-        fmt.Printf("last path: %s \n", buildDir)
-        fmt.Println("------------------")
+        //fmt.Printf("trim path end: %s \n", trimPathName)
+        //fmt.Printf("last path: %s \n", buildDir)
+        //fmt.Println("------------------")
         items, _ := os.ReadDir(buildDir)
-        fmt.Println(items)
         for _, n := range items {
             if n.Name() == trimFileName {
-                fmt.Println("found the file")
                 fmt.Println(n.Name())
                 fl, _:= os.ReadFile(buildDir + "/" + trimFileName)
                 return fl

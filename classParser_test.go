@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -8,9 +9,13 @@ import (
 func TestFileParsingWithVariables(t *testing.T) {
     testFile, err := os.ReadFile("./files/Variables.class")
     if err !=nil {
-        t.Fatal("no file named Main.class")
+        t.Fatal("no file named Variables.class")
     }
-    ParseFileInfo(testFile)
+    result := ParseFileInfo(testFile)
+    fmt.Println(result.fields)
+    if len(result.fields) == 0 {
+        t.Fatal("no fields resulted")
+    }
 }
 
 func TestFileMoreComplexExample(t *testing.T) {
@@ -18,5 +23,6 @@ func TestFileMoreComplexExample(t *testing.T) {
     if err !=nil {
         t.Fatal("no file named Complex.class")
     }
-    ParseFileInfo(testFile)
+    result := ParseFileInfo(testFile)
+    fmt.Println(result.fields)
 }

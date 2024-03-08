@@ -136,7 +136,12 @@ type Attribute struct {
     bytes []byte
 }
 
-func ParseFileInfo(file []byte) {
+func ParseFileInfo(file []byte) ParseResult {
+    defer func() {
+        if err := recover(); err != nil {
+            println("panic occured")
+        }
+    }()
     fileParser := FileParser {
         index: 0,
         file: file,
@@ -144,10 +149,9 @@ func ParseFileInfo(file []byte) {
 
     result := ParseResult{}
 
-    fmt.Println("parse file info")
     if len(fileParser.file) > 0 {
         if !isValidFile(fileParser) {
-            return
+            return result 
         }
 
         fileParser.readValueAndUpdateIndexBy(8)
@@ -166,9 +170,9 @@ func ParseFileInfo(file []byte) {
             constantPool = append(constantPool, poolItem)
             //printConstantPool(poolItem)
         } 
-        for i := 0; i < len(constantPool); i++ {
-            parseFinishedConstantPool(constantPool[i], constantPool)
-        }
+        //for i := 0; i < len(constantPool); i++ {
+        //    parseFinishedConstantPool(constantPool[i], constantPool)
+        //}
 
         //access flags
         fileParser.readValueAndUpdateIndexBy(2)
@@ -182,7 +186,7 @@ func ParseFileInfo(file []byte) {
         // interfaces
         // interface count
         interfaceCount := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2))
-        fmt.Printf("interface count %d \n", interfaceCount)
+        //fmt.Printf("interface count %d \n", interfaceCount)
         if interfaceCount > 0 {
             panic("interface support is not present")
         }
@@ -191,9 +195,12 @@ func ParseFileInfo(file []byte) {
         fmt.Printf("fields count %d \n", fieldsCount)
         for i:= 0; i < int(fieldsCount); i++ {
             fieldInfo := parseFieldInfo(&fileParser, constantPool)
-            fmt.Printf("field info name %s \n", fieldInfo.name)
+            result.fields = append(result.fields, fieldInfo.name)
+            //fmt.Printf("field info name %s \n", fieldInfo.name)
         }
     }
+
+    return result 
 }
 
 func parseFieldInfo(fp *FileParser, constantPool []ConstantPool) FieldInfo {
@@ -211,8 +218,6 @@ func parseFieldInfo(fp *FileParser, constantPool []ConstantPool) FieldInfo {
         nameIndex:= binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2))
         attribute.name = parseNameIndex(constantPool, uint(nameIndex)) 
         attributeLenBytes := fp.readValueAndUpdateIndexBy(4)
-        fmt.Printf("attr len bytes %v \n", attributeLenBytes)
-        fmt.Printf("attr len bytes %d \n", binary.BigEndian.Uint32(attributeLenBytes))
         attribute.attributeLength = binary.BigEndian.Uint32(attributeLenBytes)
         attribute.bytes = fp.readValueAndUpdateIndexBy(int64(attribute.attributeLength))
         fieldInfo.attributes = append(fieldInfo.attributes, attribute)
@@ -354,28 +359,26 @@ func printConstantPool(cp ConstantPool) {
 func parseFinishedConstantPool(poolItem ConstantPool, constantPool []ConstantPool) {
     //fmt.Printf("item tag %d \n", poolItem.tag)
     switch tag := poolItem.tag; tag {
-    case 7:
-        fmt.Println(parseNameIndex(constantPool, uint(poolItem.classInfo.nameIndex -1)))
     case 9:
-        fmt.Println("tag is 9")
+        //fmt.Println("tag is 9")
         fieldRef := poolItem.fieldRef
         classIndex:= constantPool[fieldRef.classIndex -1].classInfo
-        name := parseNameIndex(constantPool, uint(classIndex.nameIndex))
-        fmt.Printf("string %s\n", name)
+        parseNameIndex(constantPool, uint(classIndex.nameIndex))
+        //fmt.Printf("string %s\n", name)
         parseNameAndType(constantPool, uint(fieldRef.nameAndTypeIndex - 1))
     case 10:
-        fmt.Println("tag is 10")
+        //fmt.Println("tag is 10")
         methodRef := poolItem.methodRef
         classIndex:= constantPool[methodRef.classIndex -1].classInfo
-        name := parseNameIndex(constantPool, uint(classIndex.nameIndex))
-        fmt.Printf("string %s\n", name)
+        parseNameIndex(constantPool, uint(classIndex.nameIndex))
+        //fmt.Printf("string %s\n", name)
         parseNameAndType(constantPool, uint(methodRef.nameAndTypeIndex - 1))
     case 11:
-        fmt.Println("tag is 11")
+        //fmt.Println("tag is 11")
         methodRef := poolItem.interfaceMethodRef
         classIndex:= constantPool[methodRef.classIndex -1].classInfo
-        name := parseNameIndex(constantPool, uint(classIndex.nameIndex))
-        fmt.Printf("string %s\n", name)
+        parseNameIndex(constantPool, uint(classIndex.nameIndex))
+        //fmt.Printf("string %s\n", name)
         parseNameAndType(constantPool, uint(methodRef.nameAndTypeIndex - 1))
     }
 
@@ -389,10 +392,10 @@ func parseNameIndex(cp []ConstantPool, index uint) string {
 func parseNameAndType(cp []ConstantPool, index uint) string {
     nameAndType := cp[index].constantNameAndTypeInfo
     name := string(cp[nameAndType.nameIndex - 1].constantUtf8.bytes)
-    description:= string(cp[nameAndType.descriptionIndex -1].constantUtf8.bytes)
-    fmt.Printf("name: %s \n", name)
-    fmt.Printf("description: %s \n", description)
-    return ""
+    //description:= string(cp[nameAndType.descriptionIndex -1].constantUtf8.bytes)
+    //fmt.Printf("name: %s \n", name)
+    //fmt.Printf("description: %s \n", description)
+    return name
 }
 
 func parseNameFromNextBytes(fileParser *FileParser, constantPool []ConstantPool) string {

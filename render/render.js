@@ -86,7 +86,8 @@ function initItems(tree) {
                 sizeY: node.SizeY,
                 children: node.Children,
                 isDir: node.IsDir,
-                path: node.Path
+                path: node.Path,
+                optional: node.OptionalInfo,
             }
         );
     }

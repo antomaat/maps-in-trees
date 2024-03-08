@@ -8,7 +8,7 @@ import (
 	"slices"
 )
 
-type Node  struct {
+type Node struct {
     Name string
     PositionX float64 
     PositionY float64 
@@ -18,6 +18,13 @@ type Node  struct {
     Children []Node
     IsDir bool
     Path string
+    IsModule bool
+    OptionalInfo OptionalInfo
+}
+
+type OptionalInfo struct {
+    Fields []string
+    SuperClass string
 }
 
 type Vector2 struct {
