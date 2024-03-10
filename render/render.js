@@ -13,16 +13,36 @@ const path = document.getElementById("path");
 
 const context = createCanvas();
 
-let selectedNode = undefined
+let selected = []
 
 loadJson().then(tree => {tree;});
 
+function onAdvancedSearch() {
+    const searchTerm = document.getElementById('advanced_search').value.trim()
+    selected = [];
+    redrawTreemap();
+    for (node of items) {
+        if (node.optional !== undefined) {
+            if (node.optional.Fields !== null) {
+                for (const name of node.optional.Fields) {
+                    if (name.includes(searchTerm)) {
+                        selected.push(node);
+                        drawSelectedNode(node);
+                    }
+                }
+            }
+        } 
+    }
+}
+
 function onSearch() {
     const searchTerm = document.getElementById("search_file").value.trim()
+    selected = [];
+    redrawTreemap();
     for (node of items) {
         if (node.name === undefined) continue;
         if (node.name.includes(searchTerm)) {
-            selectedNode = node;
+            selected.push(node);
             drawSelectedNode(node);
         }
     }
@@ -56,13 +76,18 @@ function onMouseMove(event) {
 
 function run() {
     while(shouldRedraw) {
-        console.log("redraw");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#FF0000";
-        ctx.fillRect(0, 0, 2000, 500);
-        getItemAndDisplay();
-        drawTreemap(ctx);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = "#FF0000";
+        context.fillRect(0, 0, 2000, 500);
+        drawTreemap(context);
     }
+}
+
+function redrawTreemap() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#FF0000";
+    context.fillRect(0, 0, 2000, 500);
+    drawTreemap(context);
 }
 
 function getItemAndDisplay() {
@@ -72,24 +97,6 @@ function getItemAndDisplay() {
                 path.innerHTML = node.path + "/" + node.name;
             }
         }
-    }
-}
-
-function initItems(tree) {
-    for (node of tree.Children) {
-        items.push(
-            {
-                name: node.Name,
-                positionX: node.PositionX,
-                positionY: node.PositionY,
-                sizeX: node.SizeX,
-                sizeY: node.SizeY,
-                children: node.Children,
-                isDir: node.IsDir,
-                path: node.Path,
-                optional: node.OptionalInfo,
-            }
-        );
     }
 }
 
@@ -109,7 +116,8 @@ function initTree(tree) {
                 sizeY: node.SizeY,
                 children: node.Children,
                 isDir: node.IsDir,
-                path: node.Path
+                path: node.Path,
+                optional: node.OptionalInfo,
             }
         );
         if (node.IsDir) {
@@ -119,7 +127,6 @@ function initTree(tree) {
 }
 
 function drawTreemap(context) {
-    console.log(items);
     dirs = [];
     for (node of items) {
         if (node.isDir) {
@@ -159,7 +166,6 @@ async function loadJson() {
     const response = await fetch('./input.json');
     const treeJson = await response.json();
     treemap = treeJson;
-    //initItems(treemap);
     initTree(treemap)
     drawTreemap(context);
 }
