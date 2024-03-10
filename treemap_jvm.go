@@ -26,7 +26,8 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
         info, _ := items[i].Info()
         if items[i].IsDir() && !isIgnoredDir(items[i].Name()) {
             child = CreateJvmTree(items[i].Name(), pathName + "/" + items[i].Name(), isJvm, rootDir)
-        } else {
+        }
+        if !items[i].IsDir() {
             classFile := findFileInBuildDir(items[i].Name(), rootDir, pathName)
             optionalInfo := OptionalInfo{}
             if classFile != nil {
