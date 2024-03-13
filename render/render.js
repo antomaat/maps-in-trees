@@ -84,17 +84,23 @@ function onClickCanvas(event) {
         selected.push(node);
 
         if (node.optional.Fields !== null) {
-            for (const name of node.optional.Fields) {
+            for (const name of node.optional.FieldClasses) {
+                let nameSplit = name.split('/')
+                nameSplit = nameSplit[nameSplit.length - 1].replace(';', '');
+                console.log(nameSplit)
                 for (const childNode of items) {
                     if (childNode.name === undefined) continue;
-                    if (childNode.name.toLowerCase() === name.toLowerCase()) {
+                    if (childNode.name.toLowerCase().includes(nameSplit.toLowerCase())) {
                         selected.push(childNode);
+                        console.log("correct name");
+                        break;
                     }
                 }
             }
         }
-
-        drawSelectedNode(node);
+        for (const n of selected) {
+            drawSelectedNode(n);
+        }
     }
 }
 
