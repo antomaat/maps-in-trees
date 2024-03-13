@@ -56,6 +56,7 @@ function drawSelectedNode(node) {
 function createCanvas() {
     canvas = document.getElementById("myCanvas");
     canvas.addEventListener("mousemove", onMouseMove) 
+    canvas.addEventListener("click", onClickCanvas) 
     canvasRect = canvas.getBoundingClientRect();
 
     const ctx = canvas.getContext("2d");
@@ -74,12 +75,13 @@ function onMouseMove(event) {
     getItemAndDisplay();
 }
 
-function run() {
-    while(shouldRedraw) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context.fillStyle = "#FF0000";
-        context.fillRect(0, 0, 2000, 500);
-        drawTreemap(context);
+function onClickCanvas(event) {
+    console.log("on click canvas");
+    let node = getItemFromMouse();
+    if (node != null) {
+        redrawTreemap();
+        selected.push(node);
+        drawSelectedNode(node);
     }
 }
 
@@ -88,6 +90,20 @@ function redrawTreemap() {
     context.fillStyle = "#FF0000";
     context.fillRect(0, 0, 2000, 500);
     drawTreemap(context);
+}
+
+function getItemFromMouse() {
+    for (node of items) {
+        if (!node.isDir) {
+            if (mouse_pos.x > node.positionX && mouse_pos.x < node.positionX + node.sizeX) {
+                if (mouse_pos.y > node.positionY && mouse_pos.y < node.positionY + node.sizeY) {
+                    return node;
+                }
+            }
+
+        }
+    }
+    return null;
 }
 
 function getItemAndDisplay() {
