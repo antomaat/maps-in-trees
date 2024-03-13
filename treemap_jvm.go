@@ -33,6 +33,7 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
             if classFile != nil {
                 fileInfo := ParseFileInfo(classFile)
                 optionalInfo.Fields = fileInfo.fields
+                optionalInfo.FieldClasses = fileInfo.fieldClasses
             }
             child = Node { 
                 Name: items[i].Name(),

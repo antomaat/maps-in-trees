@@ -24,6 +24,7 @@ type Node struct {
 
 type OptionalInfo struct {
     Fields []string
+    FieldClasses []string
     SuperClass string
 }
 

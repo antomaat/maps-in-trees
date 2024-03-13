@@ -77,10 +77,23 @@ function onMouseMove(event) {
 
 function onClickCanvas(event) {
     console.log("on click canvas");
-    let node = getItemFromMouse();
+    const node = getItemFromMouse();
+    console.log(node)
     if (node != null) {
         redrawTreemap();
         selected.push(node);
+
+        if (node.optional.Fields !== null) {
+            for (const name of node.optional.Fields) {
+                for (const childNode of items) {
+                    if (childNode.name === undefined) continue;
+                    if (childNode.name.toLowerCase() === name.toLowerCase()) {
+                        selected.push(childNode);
+                    }
+                }
+            }
+        }
+
         drawSelectedNode(node);
     }
 }

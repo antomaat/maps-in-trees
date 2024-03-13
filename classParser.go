@@ -36,6 +36,7 @@ type ParseResult struct {
     className string
     superClassName string
     fields []string
+    fieldClasses []string
 }
 
 type ConstantPool struct {
@@ -192,10 +193,11 @@ func ParseFileInfo(file []byte) ParseResult {
         }
         // add fields
         fieldsCount := binary.BigEndian.Uint16(fileParser.readValueAndUpdateIndexBy(2)) 
-        fmt.Printf("fields count %d \n", fieldsCount)
+        //fmt.Printf("fields count %d \n", fieldsCount)
         for i:= 0; i < int(fieldsCount); i++ {
             fieldInfo := parseFieldInfo(&fileParser, constantPool)
             result.fields = append(result.fields, fieldInfo.name)
+            result.fieldClasses = append(result.fieldClasses, fieldInfo.descriptor)
             //fmt.Printf("field info name %s \n", fieldInfo.name)
         }
     }
@@ -208,8 +210,10 @@ func parseFieldInfo(fp *FileParser, constantPool []ConstantPool) FieldInfo {
 
     fieldInfo.accessFlags = binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2))
     name := parseNameIndex(constantPool, uint(binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2))))
-    descriptor := parseNameIndex(constantPool, uint(binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2))))
+    fmt.Println("add descriptor")
+    descriptor := parseNameIndex(constantPool, uint(binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2)) - 1))
 
+    fmt.Printf("descriptor %s \n", descriptor)
     fieldInfo.name = name
     fieldInfo.descriptor = descriptor 
     fieldInfo.attributeCount = binary.BigEndian.Uint16(fp.readValueAndUpdateIndexBy(2))
@@ -385,6 +389,7 @@ func parseFinishedConstantPool(poolItem ConstantPool, constantPool []ConstantPoo
 }
 
 func parseNameIndex(cp []ConstantPool, index uint) string {
+    fmt.Printf("index of name %d \n", index)
     className := cp[index].constantUtf8.bytes
     return string(className)
 }
