@@ -1,0 +1,15 @@
+
+.canvas-controller {
+    display: flex;
+    height: 100%;
+    width: 100vw;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+canvas {
+    height: 500px;
+    width: 1000px;
+    
+}
