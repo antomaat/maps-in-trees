@@ -14,6 +14,8 @@ const path = document.getElementById("path");
 const context = createCanvas();
 
 let selected = []
+let selectedChilds = []
+let selectedParents = []
 
 loadJson().then(tree => {tree;});
 
@@ -53,6 +55,16 @@ function drawSelectedNode(node) {
     context.fillRect(node.positionX, node.positionY, node.sizeX, node.sizeY);
 }
 
+function drawSelectedChildNode(node) {
+    context.fillStyle = "#FFC133";
+    context.fillRect(node.positionX, node.positionY, node.sizeX, node.sizeY);
+}
+
+function drawSelectedParentNode(node) {
+    context.fillStyle = "#FF4F33";
+    context.fillRect(node.positionX, node.positionY, node.sizeX, node.sizeY);
+}
+
 function createCanvas() {
     canvas = document.getElementById("myCanvas");
     canvas.addEventListener("mousemove", onMouseMove) 
@@ -76,9 +88,11 @@ function onMouseMove(event) {
 }
 
 function onClickCanvas(event) {
-    console.log("on click canvas");
+    selected = [];
+    selectedChilds = [];
+    selectedParents = [];
     const node = getItemFromMouse();
-    console.log(node)
+    console.log(node);
     if (node != null) {
         redrawTreemap();
         selected.push(node);
@@ -87,19 +101,41 @@ function onClickCanvas(event) {
             for (const name of node.optional.FieldClasses) {
                 let nameSplit = name.split('/')
                 nameSplit = nameSplit[nameSplit.length - 1].replace(';', '');
-                console.log(nameSplit)
                 for (const childNode of items) {
                     if (childNode.name === undefined) continue;
                     if (childNode.name.toLowerCase().includes(nameSplit.toLowerCase())) {
-                        selected.push(childNode);
-                        console.log("correct name");
+                        selectedChilds.push(childNode);
                         break;
                     }
                 }
             }
         }
+        for (const n of items) {
+            if (n.name === undefined) continue;
+            if (n.optional !== null && n.optional.FieldClasses !== null) {
+                for (const nField of n.optional.FieldClasses) {
+                    let nameSplit = nField.split('/')
+                    nameSplit = nameSplit[nameSplit.length - 1].replace(';', '');
+                    if (node.name.toLowerCase().includes(nameSplit.toLowerCase())) {
+                        console.log("name split");
+                        console.log(nameSplit);
+                        selectedParents.push(n)
+                    }
+                    
+                }
+            }
+        }
+
+
         for (const n of selected) {
             drawSelectedNode(n);
+        }
+        for (const n of selectedChilds) {
+            drawSelectedChildNode(n);
+        }
+
+        for (const n of selectedParents) {
+            drawSelectedParentNode(n);
         }
     }
 }
