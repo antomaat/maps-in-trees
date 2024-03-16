@@ -1,8 +1,12 @@
 
+const ctrKeyCode = 17;
+const moduleKeyCode = 77;
+
 let treemap;
 let canvas;
 let shouldRedraw = true;
 let items = [];
+let isModuleView = false;
 
 let canvasRect;
 
@@ -16,6 +20,38 @@ const context = createCanvas();
 let selected = []
 let selectedChilds = []
 let selectedParents = []
+let modules = [];
+
+let ctrPressed = false;
+
+document.addEventListener("keydown", enableKeys);
+document.addEventListener("keyup", disableKeys);
+
+function enableKeys(event) {
+    if (event.keyCode === ctrKeyCode) {
+        ctrPressed = true;
+    }
+    switchModuleMode(event.keyCode);
+}
+
+function disableKeys(event) {
+    if (event.keyCode === ctrKeyCode) {
+        ctrPressed = false;
+    }
+}
+
+function switchModuleMode(keyCode) {
+    console.log(keyCode);
+    if (keyCode === moduleKeyCode && ctrPressed) {
+        isModuleView = !isModuleView;
+    }
+
+    if (isModuleView) {
+        redrawModuleTreemap();
+    } else {
+        redrawTreemap();
+    }
+}
 
 loadJson().then(tree => {tree;});
 
@@ -147,6 +183,14 @@ function redrawTreemap() {
     drawTreemap(context);
 }
 
+function redrawModuleTreemap() {
+    console.log("redraw module");
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#FF0000";
+    context.fillRect(0, 0, 2000, 500);
+    drawModuleTreemap(context);
+}
+
 function getItemFromMouse() {
     for (node of items) {
         if (!node.isDir) {
@@ -172,7 +216,6 @@ function getItemAndDisplay() {
 }
 
 function initTree(tree) {
-    console.log("tree: ", tree);
     if (tree.Children === null) {
         return
     }
@@ -193,6 +236,9 @@ function initTree(tree) {
         );
         if (node.IsDir) {
             initTree(node)
+        }
+        if (node.IsModule) {
+            modules.push(node);
         }
     }
 }
@@ -216,6 +262,18 @@ function drawTreemap(context) {
 
 }
 
+function drawModuleTreemap(context) {
+    dirs = [];
+    for (node of modules) {
+        context.fillStyle = "#808080";
+        context.fillRect(node.positionX, node.positionY, node.sizeX, node.sizeY);
+    }
+
+    for (dir of modules) {
+        drawDirBorder(context, dir.positionX, dir.positionY, dir.sizeX, dir.sizeY, '#8A2BE2', 4);
+    }
+
+}
 function drawDirBorder(ctx, xPos, yPos, width, height, color = '#fff', thickness = 2)
 {
     ctx.lineWidth = thickness;

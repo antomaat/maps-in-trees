@@ -16,6 +16,7 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
         SizeY: 1,
         Size: 1,
         IsDir: true,
+        IsModule: false,
         Path: pathName,
     }
 
@@ -46,9 +47,10 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
                 Path: pathName,
                 OptionalInfo: optionalInfo,
             }
-            fmt.Println("optional info fields ")
-            fmt.Println(child.OptionalInfo.Fields)
-            fmt.Println("------------------")
+            if items[i].Name() == "build.gradle.kts" || items[i].Name() == "build.gradle" {
+                fmt.Println("node is a module")
+                node.IsModule = true;
+            }
         }
 
         // add only if the file is bigger than 0
