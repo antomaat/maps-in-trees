@@ -68,7 +68,7 @@ func isIgnoredDir(name string) bool {
 
 func createTreemap(dir string, output string, areaX float64, areaY float64, isJvm bool) {
     //node := CreateTree(dir, dir, isJvm)
-    node := CreateJvmTree(dir, dir, isJvm, dir)
+    node := CreateJvmTree(dir, dir, isJvm, dir, dir)
     node.SizeX = areaX
     node.SizeY = areaY
     debug, _ := json.Marshal(node)

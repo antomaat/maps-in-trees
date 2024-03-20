@@ -7,7 +7,7 @@ import(
     "fmt"
 )
 
-func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) Node {
+func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string, gradleBuildDir string) Node {
     node := Node {
         Name: dirName,
         PositionX: 0,
@@ -21,15 +21,26 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
     }
 
     items, _ := os.ReadDir(pathName)
+    for i := 0; i < len(items); i++ {
+            if items[i].Name() == "build.gradle.kts" || items[i].Name() == "build.gradle" {
+                node.IsModule = true;
+                gradleBuildDir = pathName
+            }
+    }
 
     for i := 0; i < len(items); i++ {
         child := Node {}
         info, _ := items[i].Info()
         if items[i].IsDir() && !isIgnoredDir(items[i].Name()) {
-            child = CreateJvmTree(items[i].Name(), pathName + "/" + items[i].Name(), isJvm, rootDir)
+            child = CreateJvmTree(items[i].Name(), pathName + "/" + items[i].Name(), isJvm, rootDir, gradleBuildDir)
         }
         if !items[i].IsDir() {
-            classFile := findFileInBuildDir(items[i].Name(), rootDir, pathName)
+            fmt.Println("======================================")
+            fmt.Printf("gradle module dir %s \n", gradleBuildDir)
+            fmt.Printf("dir is %s \n", pathName)
+            fmt.Printf("root dir is %s \n", rootDir)
+            fmt.Printf("item is %s \n", items[i].Name())
+            classFile := findFileInBuildDir(items[i].Name(), gradleBuildDir, pathName)
             optionalInfo := OptionalInfo{}
             if classFile != nil {
                 fileInfo := ParseFileInfo(classFile)
@@ -46,10 +57,6 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string) 
                 IsDir: false,
                 Path: pathName,
                 OptionalInfo: optionalInfo,
-            }
-            if items[i].Name() == "build.gradle.kts" || items[i].Name() == "build.gradle" {
-                fmt.Println("node is a module")
-                node.IsModule = true;
             }
         }
 
