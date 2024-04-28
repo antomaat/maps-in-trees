@@ -41,6 +41,8 @@ func CreateJvmTree(dirName string, pathName string, isJvm bool, rootDir string, 
             fmt.Printf("root dir is %s \n", rootDir)
             fmt.Printf("item is %s \n", items[i].Name())
             classFile := findFileInBuildDir(items[i].Name(), gradleBuildDir, pathName)
+            fmt.Print("classFile: ")
+            fmt.Println(classFile)
             optionalInfo := OptionalInfo{}
             if classFile != nil {
                 fileInfo := ParseFileInfo(classFile)
@@ -88,6 +90,30 @@ func findFileInBuildDir(fileName string, rootDir string, pathName string) []byte
         trimFileName = strings.Replace(trimFileName, ".java", "", -1)
         trimFileName += ".class"
         buildDir := rootDir + "/build/classes/kotlin/" + trimPathName
+        //buildDir = buildDir + "/" + trimFileName + ".class"
+        //fmt.Printf("trim path end: %s \n", trimPathName)
+        //fmt.Printf("last path: %s \n", buildDir)
+        //fmt.Println("------------------")
+        items, _ := os.ReadDir(buildDir)
+        for _, n := range items {
+            if n.Name() == trimFileName {
+                fmt.Println(n.Name())
+                fl, _:= os.ReadFile(buildDir + "/" + trimFileName)
+                return fl
+            }
+        }
+    }
+
+    if (strings.Contains(fileName, ".java")) {
+        //fmt.Println("here is the info: ")
+        fmt.Printf("filename %s: \n", fileName)
+        //fmt.Printf("rootDir %s: \n", rootDir)
+        //fmt.Printf("pathName %s: \n", pathName)
+        trimPathName := strings.TrimPrefix(pathName, rootDir + "/src/")
+        trimPathName = strings.Replace(trimPathName, "java/", "", 1)
+        trimFileName := strings.Replace(fileName, ".java", "", -1)
+        trimFileName += ".class"
+        buildDir := rootDir + "/build/classes/java/" + trimPathName
         //buildDir = buildDir + "/" + trimFileName + ".class"
         //fmt.Printf("trim path end: %s \n", trimPathName)
         //fmt.Printf("last path: %s \n", buildDir)
